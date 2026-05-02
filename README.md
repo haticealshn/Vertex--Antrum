@@ -1,62 +1,48 @@
-# 🚀 ANTRUM: Zero-Carbon Cave Storage & Exchange Ecosystem
+# 🚀 ANTRUM: Zero-Carbon Cave Storage & Exchange OS
 
 *Kapadokya Hackathon 2026 | "Cave2Cloud - Kapadokya'dan Global Pazara" Teması* *Takım: **Vertex***
 
 ---
 
 ## 📌 Proje Bağlantıları
-* 🎥 **Demo Videosu (Loom):** [Video Linki Buraya] *(Max 3 dk)*
-* 🌐 **Canlı Demo (Vercel):** [Canlı Yayın Linki Buraya]
-* 📂 **GitHub Repo:** [Repo Linki] *(Not: Pazar sabahı 09:00 öncesi Public yapılacaktır)*
+* 🎥 **Demo Videosu (Loom/YouTube):** [Video Linki Buraya] *(Max 3 dk)*
+* 🌐 **Canlı Demo (Vercel/Render):** [Canlı Yayın Linki Buraya]
+* 📂 **GitHub Repo:** [Repo Linki]
 
 ---
 
-## 💡 1. Projenin Özü: Rakiplerin Hiç Düşünmediği Modül
-Kapadokya'daki doğal mağaralar, yapay soğuk hava depolarının yaptığı işi **%0 enerji** harcayarak yapar. ANTRUM, bu devasa enerji tasarrufunu ölçer, ISO 14064 standartlarına göre belgelendirir, karbon kredisine dönüştürür ve küresel şirketlere satar. Bu sistemde mağara sahibi hiçbir şey üretmeden, sadece alanının doğal soğutma kapasitesini kiralayarak 3 eksenli (Kira + Lojistik + Karbon Kredisi) bir gelir elde eder.
+## 💡 1. Projenin Özü: "Rakiplerin Hiç Düşünmediği Modül"
+Kapadokya'daki doğal mağaralar (tüf kayalar), yapay soğuk hava depolarının yaptığı iklimlendirme işini **%0 enerji** harcayarak yapar. ANTRUM, bu devasa enerji tasarrufunu (kWh/m³) ölçer, ISO 14064 standartlarına göre belgelendirir, karbon kredisine dönüştürür ve küresel şirketlere satar. Bu sistemde mağara sahibi, alanının doğal soğutma kapasitesini kiralayarak 3 eksenli (Kira + Lojistik + Karbon Kredisi) bir gelir modeli elde eder.
 
-## 🔬 2. Bilimsel Altyapı ve Karbon Tasarruf Modeli
+## 🎨 2. Arayüz ve Kullanıcı Deneyimi (Glassmorphism)
+Sistemimiz, sürdürülebilirlik vizyonunu yansıtmak amacıyla **"Aydınlık Doğa (Light Nature)"** teması ve **Glassmorphism** UI mimarisi ile tasarlanmıştır. Tek Sayfa Uygulaması (SPA) olarak çalışan platform; Dashboard, Mağara Ağları, Lojistik Planlayıcı, Karbon Borsası ve Geçmiş Veri Raporları modüllerini tek ekranda pürüzsüzce sunar.
 
-**Geleneksel Depolar Neden Zararlı?**
-Yapay soğuk hava depolarının karbon salınımı iki ana kaynaktan (dolaylı) gerçekleşir:
-1. **Elektrik Tüketimi:** Standart bir soğuk depo yılda 200-400 kWh/m² enerji tüketir. Türkiye'nin şebeke yapısında bu ciddi bir karbon ayak izi demektir.
-2. **Soğutucu Gaz Kaçakları:** Klimaların içindeki HFC (hidroflorokarbon) gazları kaçtığında, CO₂'den binlerce kat daha zararlıdır. Örneğin; R-410A gazının Küresel Isınma Potansiyeli (GWP) 2.088'dir. (1 kg kaçak = 2.088 kg CO₂ salınımı).
+## ⚙️ 3. Hackathon Zorunlu Kurallarının (Bonus) Entegrasyonu
+Hackathon komitesi tarafından belirlenen 3 teknik zorunlu kural, birbiriyle konuşan tek bir hesap zincirinde **"Bonus Puan"** kurgusuyla birleştirilmiştir:
 
-**Doğal Avantaj (Respiration Emission):**
-Patates gibi organik ürünler depolanırken oksijen tüketir ve CO₂/nem salar. Yapay depolarda bu CO₂'yi temizlemek için klimalar ekstra enerji harcar. ANTRUM'un kullandığı mağaralarda ise bu emisyon doğal havalanma ve tüf kayanın nefes alan yapısıyla ekstra enerji gerektirmeden dağılır.
+1. **Kural 3 (Coğrafi Veri & Dinamik Rota):** Sabit veri (hardcoded) kullanımından kaçınılmıştır. Lojistik sekmesinde seçilen çıkış şehri ile mağara arasındaki mesafe **Leaflet.js** ve **OSRM (OpenRouteService)** ile dinamik hesaplanır. Harita üzerindeki herhangi bir noktaya tıklandığında **Nominatim API (Reverse Geocoding)** ile anlık adres tespiti yapılır.
+2. **Kural 1 (Coğrafi Karbon İzi):** OSRM'den gelen rota mesafesi (km) ve yük tonajı baz alınarak nakliye emisyonu hesaplanır. Bu değer, mağaranın sağladığı brüt karbon tasarrufundan düşülerek **"Net Karbon Kazancı"** elde edilir.
+3. **Kural 2 (Canlı Döviz Kuru):** Elde edilen Net Karbon Kredisi, **ExchangeRate-API** (Fallback: Frankfurter API) üzerinden anlık çekilen USD/TRY kuru ile çarpılarak mağara sahibine anlık TL karşılığı olarak sunulur.
 
-## 🧮 3. Hesaplama Metodolojisi (Karma Yapı)
-Sistemimiz, problemi çözerken hem **Deterministik** hem de **Stokastik** modelleri birleştirir:
+## 🧮 4. Bilimsel Altyapı ve Karbon Motoru (ISO 14064)
+Karbon motorumuz m² yerine, GCCA/IIR küresel soğuk zincir standartları olan **m³ (hacim)** bazlı çalışır. 
+* *Formül:* `[Referans Depo kWh - Mağara Operasyonel Yükü (5 kWh)] × Sıcaklık Katsayısı × Hacim × 0.522 (TEİAŞ Emisyon Faktörü)`
+* Şeffaflık ilkesi gereği mağaranın %0 enerji harcadığı iddia edilmez; aydınlatma, fan ve sensörler için **5 kWh/m³** operasyonel yük brüt tasarruftan düşülür.
 
-* **Deterministik Kısım (Kesin Formüller):** Enerji tasarrufu ISO 14064 formülleriyle hesaplanır. Türkiye elektrik emisyon faktörü (TEİAŞ 2023) **0.522 kg CO₂/kWh** olarak baz alınır.
-  * *Formül:* `Tasarruf (kg CO₂e) = [Referans Depo kWh - Mağara kWh (0)] × 0.522`
-  * *Örnek (100 m² alan için):* 300 kWh × 0.522 = 156.6 kg CO₂/m²/yıl. 100 m² bir mağara yılda yaklaşık 15.7 ton CO₂ tasarrufu sağlar.
-* **Stokastik Kısım (Makine Öğrenmesi):** Mağaranın nem ve sıcaklık davranışı hava koşullarına göre değişir. Geçmiş sensör ve iklim verilerine dayalı makine öğrenmesi (regresyon) modeliyle `Open-Meteo API` üzerinden tahminleme yapılır. (Simülasyon baz değerleri: 11°C sıcaklık, %70-80 nem).
+## 🌐 5. API Ekosistemi ve Veri Akışı
+Sistem tamamen canlı verilerle beslenen bir organizmadır:
+* **Open-Meteo Live API:** Nevşehir'in anlık dış sıcaklık ve nem verisini çekerek karbon tasarruf simülasyonunu günceller.
+* **Open-Meteo Archive API:** Raporlar sekmesinde son 1, 3 veya 6 aylık geçmiş gerçek hava verilerini çekerek geçmiş karbon tasarruf istatistiklerini oluşturur (Chart.js ile çizdirilir).
+* **OSRM & Nominatim:** Dinamik rota çizimi, mesafe hesaplama ve harita üstü konum sorgulama.
+* **ExchangeRate-API:** Canlı kur çevirileri.
 
-## 🌍 4. Küresel Pazar ve Sertifikasyon Modeli
-Üretilen karbon tasarrufu, küresel havacılık sektörü başta olmak üzere dev şirketlere satılır. Havayolu idaresinin onayına gerek yoktur; ICAO'nun CORSIA programı kapsamında 193 ülkedeki tüm havayolları bu kredileri zorunlu olarak alır.
-
-* **Verra (VCS):** Enerji verimliliğine odaklanır. 1 kredi = 1 ton CO₂e (Güncel: 10$/ton). Başlangıç aşaması hedeftir.
-* **Gold Standard:** WWF desteklidir. Çevresel + sosyal fayda arar. Kapadokya yerel halkına katkı sağladığı için ileri aşamada (30$/ton) hedeflenmektedir.
-
----
-
-## ⚙️ 5. Zorunlu Kuralların (Bonus) Entegrasyonu
-Üç zorunlu kural, birbiriyle konuşan tek bir hesap zincirinde birleştirilmiştir:
-
-1. **Kural 3 (Coğrafi Veri):** `Nominatim` ve `OpenRouteService` API'leri ile ürünün çıkış noktasından mağaraya olan lojistik rotası (km) dinamik olarak çizilir.
-2. **Kural 1 (Coğrafi Karbon İzi):** Lojistik esnasında oluşan taşıma karbon izi (Mesafe × Yük × 0.100 TIR Faktörü) hesaplanır. Mağaranın sağladığı "Kurtarılan Karbon" (ISO 14064) miktarından, lojistikte harcanan karbon düşülerek NET Karbon Kredisi elde edilir.
-3. **Kural 2 (Canlı Döviz):** Elde edilen Net Karbon Kredisi, `TCMB EVDS API` üzerinden anlık çekilen USD/EUR kurları ile TL'ye çevrilir. Fiyatlandırma arayüzde ₺ ve $ olarak gösterilir ve "Kiralama Sözleşmesi" kararını tetikler.
-
----
-
-## 🏗️ 6. Sistem Mimarisi & Veri Akışı
+## 🏗️ 6. Sistem Mimarisi (Architectural Diagram)
 
 ```mermaid
 graph TD
-    A[Meteoroloji / Open-Meteo API] -->|Sıcaklık/Nem| B(Stokastik ML Modeli)
-    B --> C{ANTRUM Karbon Motoru}
-    D[Lojistik Mesafe / OpenRouteService] -->|Ulaşım Emisyonu| C
-    E[ISO 14064 & TEİAŞ 0.522 Çarpanı] -->|Depolama Tasarrufu| C
-    C -->|Net Karbon Kredisi| F[Verra / Gold Standard API]
-    F --> G(TCMB EVDS API - Canlı Kur)
-    G -->|Satış Kararı| H[Çift Para Birimli Dashboard]
+    A[Meteoroloji / Open-Meteo API] -->|Anlık / Geçmiş İklim| B(ISO 14064 Karbon Motoru)
+    C[Lojistik Mesafe / OSRM API] -->|Nakliye Emisyonu| B
+    B -->|Net Karbon Kredisi| D[Verra / Gold Standard]
+    D --> E(Canlı Döviz API)
+    E -->|Fiyatlandırma| F[Glassmorphism Dashboard]
+    F -->|Mock Blockchain| G[Havayolu Şirketlerine Satış]
