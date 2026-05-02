@@ -12,744 +12,1561 @@
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'DM Sans', sans-serif; background-color: #f0f4f0; }
-        .sidebar-active { border-right: 3px solid #22c55e; background: rgba(34, 197, 94, 0.08); }
-        #map { height: 380px; border-radius: 12px; z-index: 1; }
+        .sidebar-link { transition: all 0.15s ease; cursor: pointer; }
+        .sidebar-link:hover { background: rgba(34, 197, 94, 0.15); color: #fff; }
+        .sidebar-active { border-right: 3px solid #22c55e; background: rgba(34, 197, 94, 0.12); color: #4ade80 !important; }
+        .map-canvas { height: 380px; border-radius: 12px; z-index: 1; }
+        .map-large { height: 520px; border-radius: 12px; z-index: 1; }
         .leaflet-routing-container { display: none !important; }
         .bg-cave { background-color: #0d1f0f; }
         .font-mono-custom { font-family: 'Space Mono', monospace; }
-        
-        /* Özel animasyonlar */
         @keyframes pulse-green {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
         .animate-pulse-green { animation: pulse-green 2s ease-in-out infinite; }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .fade-in { animation: fadeIn 0.4s ease forwards; }
-
-        /* Hava koşulu renk geçişleri */
-        .weather-hot { background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: #f59e0b; }
-        .weather-cold { background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-color: #3b82f6; }
-        .weather-rainy { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); border-color: #6366f1; }
-        .weather-normal { background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-color: #22c55e; }
-
-        /* Senaryo kartları */
-        .scenario-card { transition: all 0.2s ease; cursor: pointer; }
-        .scenario-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-        .scenario-card.active { border-color: #22c55e; background: #f0fdf4; }
-
-        /* Sonuç animasyonu */
-        .result-bar { transition: width 0.8s ease; }
-
+        .view-content { display: none; }
+        .view-content.active { display: block; animation: fadeIn 0.3s ease; }
+        .cave-card { transition: all 0.2s ease; cursor: pointer; }
+        .cave-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); border-color: #22c55e; }
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-backdrop.show { display: flex; animation: fadeIn 0.2s ease; }
+        .modal-content { background: white; border-radius: 16px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .tooltip-trigger { position: relative; cursor: help; border-bottom: 1px dashed #94a3b8; }
+        .tooltip-trigger:hover .tooltip-box { opacity: 1; visibility: visible; }
+        .tooltip-box {
+            opacity: 0; visibility: hidden; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
+            background: #1e293b; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px;
+            white-space: normal; width: 240px; z-index: 50; transition: opacity 0.2s; pointer-events: none;
+        }
         input[type=range] {
-            -webkit-appearance: none;
-            height: 6px;
-            border-radius: 3px;
-            background: #d1fae5;
+            -webkit-appearance: none; height: 6px; border-radius: 3px;
+            background: linear-gradient(to right, #22c55e var(--val,50%), #d1fae5 var(--val,50%));
             outline: none;
         }
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #22c55e;
-            cursor: pointer;
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+            background: #22c55e; cursor: pointer; box-shadow: 0 2px 8px rgba(34,197,94,0.4);
         }
-
-        .tab-btn { transition: all 0.2s; }
-        .tab-btn.active { background: #22c55e; color: white; }
+        .tab-btn { transition: all 0.2s; cursor: pointer; }
+        .tab-btn.active { background: #22c55e; color: white; border-color: #22c55e; }
+        .status-active { background: #dcfce7; color: #166534; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-listed { background: #dbeafe; color: #1e40af; }
+        .status-sold { background: #f3e8ff; color: #6b21a8; }
+        .status-retired { background: #f1f5f9; color: #475569; }
+        .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%; animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <!-- SIDEBAR -->
-    <aside class="w-64 bg-cave text-white flex-shrink-0 hidden md:flex flex-col">
-        <div class="p-6 flex items-center space-x-3 border-b border-green-900">
-            <div class="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center">
-                <i data-lucide="mountain" class="text-white w-5 h-5"></i>
+<!-- ============ SIDEBAR ============ -->
+<aside class="w-64 bg-cave text-white flex-shrink-0 hidden md:flex flex-col">
+    <div class="p-6 flex items-center space-x-3 border-b border-green-900">
+        <div class="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center">
+            <i data-lucide="mountain" class="text-white w-5 h-5"></i>
+        </div>
+        <div>
+            <span class="text-xl font-bold tracking-tight font-mono-custom text-green-400">ANTRUM</span>
+            <p class="text-xs text-green-700 leading-none">Cave Carbon OS</p>
+        </div>
+    </div>
+    <nav class="flex-1 mt-4 space-y-1 px-3">
+        <a class="sidebar-link flex items-center px-4 py-3 rounded-xl sidebar-active text-sm font-medium" data-view="dashboard">
+            <i data-lucide="layout-dashboard" class="mr-3 w-4 h-4"></i> Dashboard
+        </a>
+        <a class="sidebar-link flex items-center px-4 py-3 rounded-xl text-slate-400 text-sm" data-view="caves">
+            <i data-lucide="map-pin" class="mr-3 w-4 h-4"></i> Mağara Ağları
+        </a>
+        <a class="sidebar-link flex items-center px-4 py-3 rounded-xl text-slate-400 text-sm" data-view="logistics">
+            <i data-lucide="truck" class="mr-3 w-4 h-4"></i> Lojistik Planer
+        </a>
+        <a class="sidebar-link flex items-center px-4 py-3 rounded-xl text-slate-400 text-sm" data-view="credits">
+            <i data-lucide="leaf" class="mr-3 w-4 h-4"></i> Karbon Kredileri
+        </a>
+        <a class="sidebar-link flex items-center px-4 py-3 rounded-xl text-slate-400 text-sm" data-view="reports">
+            <i data-lucide="bar-chart-3" class="mr-3 w-4 h-4"></i> Raporlar
+        </a>
+    </nav>
+    <div class="mx-3 mb-3 p-4 bg-green-900/40 rounded-xl border border-green-800">
+        <p class="text-xs text-green-500 font-semibold mb-2 flex items-center">
+            <i data-lucide="cloud" class="w-3 h-3 mr-1"></i> NEVŞEHİR CANLI
+        </p>
+        <div class="flex items-center justify-between">
+            <span class="text-2xl font-bold text-white font-mono-custom" id="sidebar-temp">--°C</span>
+            <span class="text-xs text-green-400" id="sidebar-nem">Nem: --%</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1" id="sidebar-durum">Open-Meteo API</p>
+    </div>
+    <div class="p-4 border-t border-green-900 text-xs text-slate-500">
+        v3.0.0 · Hackathon Demo · ISO 14064
+    </div>
+</aside>
+
+<!-- ============ ANA İÇERİK ============ -->
+<main class="flex-1 flex flex-col overflow-y-auto">
+    <header class="bg-white border-b h-16 flex items-center justify-between px-8 sticky top-0 z-40 shadow-sm">
+        <div class="flex items-center space-x-6">
+            <h1 class="text-base font-semibold text-slate-800" id="page-title">Operasyonel Genel Bakış</h1>
+            <div class="hidden lg:flex items-center space-x-4 text-sm text-slate-500">
+                <span class="flex items-center bg-slate-50 px-3 py-1 rounded-full">
+                    <i data-lucide="trending-up" class="w-3 h-3 mr-1 text-green-500"></i>
+                    USD/TRY: <span id="usd-rate" class="ml-1 font-semibold text-slate-800 animate-pulse">...</span>
+                </span>
+                <span class="flex items-center bg-slate-50 px-3 py-1 rounded-full">
+                    <i data-lucide="globe" class="w-3 h-3 mr-1 text-blue-500"></i>
+                    Verra: <span class="ml-1 font-semibold text-slate-800">$10/Ton</span>
+                </span>
+                <span class="flex items-center bg-slate-50 px-3 py-1 rounded-full">
+                    <i data-lucide="award" class="w-3 h-3 mr-1 text-yellow-500"></i>
+                    Gold Std: <span class="ml-1 font-semibold text-slate-800">$30/Ton</span>
+                </span>
             </div>
-            <div>
-                <span class="text-xl font-bold tracking-tight font-mono-custom text-green-400">ANTRUM</span>
-                <p class="text-xs text-green-700 leading-none">Cave Carbon OS</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="text-right hidden sm:block">
+                <p class="text-xs text-slate-400">Son Güncelleme</p>
+                <p class="text-sm font-semibold text-slate-700 font-mono-custom" id="last-update">--:--:--</p>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center cursor-pointer hover:bg-green-200 transition" onclick="openProfile()">
+                <i data-lucide="user" class="text-green-600 w-4 h-4"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============ DASHBOARD VIEW ============ -->
+    <div id="view-dashboard" class="view-content active p-6 space-y-6">
+        <!-- Üst Kartlar -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Net Karbon Tasarrufu (Toplam)</p>
+                        <h3 class="text-2xl font-bold mt-1 text-slate-800 font-mono-custom" id="kpi-total-savings">-- Ton</h3>
+                    </div>
+                    <div class="p-2 bg-green-50 rounded-lg text-green-600">
+                        <i data-lucide="leaf" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-green-600 mt-3 flex items-center font-semibold">
+                    <i data-lucide="arrow-up-right" class="w-3 h-3 mr-1"></i> Aktif 8 mağara · 11.400 m³
+                </p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Toplam Portföy Değeri</p>
+                        <h3 class="text-xl font-bold mt-1 text-green-600 font-mono-custom" id="kpi-portfolio">Hesaplanıyor...</h3>
+                    </div>
+                    <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
+                        <i data-lucide="wallet" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3">1 USD = <span class="current-usd font-semibold">...</span> ₺ (Canlı)</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Enerji Tasarrufu</p>
+                        <h3 class="text-2xl font-bold mt-1 text-slate-800 font-mono-custom">%89.4</h3>
+                    </div>
+                    <div class="p-2 bg-orange-50 rounded-lg text-orange-500">
+                        <i data-lucide="zap" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3">Yapay soğuk depoya kıyasla (~5 kWh/m³ op. yük dahil)</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium">Aktif Mağara Hacmi</p>
+                        <h3 class="text-2xl font-bold mt-1 text-slate-800 font-mono-custom" id="kpi-volume">-- m³</h3>
+                    </div>
+                    <div class="p-2 bg-slate-50 rounded-lg text-slate-500">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3">Kapadokya bölgesi 8 mağara</p>
             </div>
         </div>
 
-        <nav class="flex-1 mt-4 space-y-1 px-3">
-            <a href="#" class="flex items-center px-4 py-3 rounded-xl sidebar-active text-green-400 text-sm font-medium">
-                <i data-lucide="layout-dashboard" class="mr-3 w-4 h-4"></i> Dashboard
-            </a>
-            <a href="#" class="flex items-center px-4 py-3 rounded-xl hover:bg-green-900/30 transition text-slate-400 hover:text-white text-sm">
-                <i data-lucide="map-pin" class="mr-3 w-4 h-4"></i> Mağara Ağları
-            </a>
-            <a href="#" class="flex items-center px-4 py-3 rounded-xl hover:bg-green-900/30 transition text-slate-400 hover:text-white text-sm">
-                <i data-lucide="truck" class="mr-3 w-4 h-4"></i> Lojistik Planer
-            </a>
-            <a href="#" class="flex items-center px-4 py-3 rounded-xl hover:bg-green-900/30 transition text-slate-400 hover:text-white text-sm">
-                <i data-lucide="leaf" class="mr-3 w-4 h-4"></i> Karbon Kredileri
-            </a>
-            <a href="#" class="flex items-center px-4 py-3 rounded-xl hover:bg-green-900/30 transition text-slate-400 hover:text-white text-sm">
-                <i data-lucide="bar-chart-3" class="mr-3 w-4 h-4"></i> Raporlar
-            </a>
-        </nav>
-
-        <!-- Canlı Hava Durumu Sidebar -->
-        <div class="mx-3 mb-3 p-4 bg-green-900/40 rounded-xl border border-green-800">
-            <p class="text-xs text-green-500 font-semibold mb-2 flex items-center">
-                <i data-lucide="cloud" class="w-3 h-3 mr-1"></i> NEVŞEHİR CANLI
-            </p>
-            <div class="flex items-center justify-between">
-                <span class="text-2xl font-bold text-white font-mono-custom" id="sidebar-temp">--°C</span>
-                <span class="text-xs text-green-400" id="sidebar-nem">Nem: --%</span>
+        <!-- CANLI KARBON HESAPLAYICI (m³ tabanlı, senaryosuz) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+                <h2 class="text-base font-bold text-slate-800 flex items-center">
+                    <i data-lucide="calculator" class="mr-2 text-green-500 w-5 h-5"></i>
+                    Canlı Karbon Tasarruf Hesaplayıcı
+                    <span class="ml-3 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">ISO 14064 · Open-Meteo · m³ Bazlı</span>
+                </h2>
+                <div id="hava-durumu-badge" class="flex items-center space-x-2 px-3 py-1 rounded-full border border-green-300 bg-green-50 text-green-700 text-sm font-semibold">
+                    <span class="text-lg animate-pulse-green">🔴</span>
+                    <span id="hava-label">Canlı veri yükleniyor...</span>
+                </div>
             </div>
-            <p class="text-xs text-slate-500 mt-1" id="sidebar-durum">Open-Meteo API</p>
+            <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- SOL: GİRİŞLER -->
+                <div class="space-y-6">
+                    <!-- HACİM SLIDER -->
+                    <div>
+                        <label class="text-sm font-semibold text-slate-700 mb-2 block flex items-center">
+                            Mağara Hacmi: <span id="hacim-goster" class="ml-2 text-green-600 font-mono-custom">1.000 m³</span>
+                            <span class="ml-auto text-xs text-slate-400 font-normal">Tipik mağara: 500-5.000 m³</span>
+                        </label>
+                        <input type="range" id="input-hacim" min="100" max="50000" step="100" value="1000"
+                            oninput="onHacimChange(this)" class="w-full">
+                        <div class="flex justify-between text-xs text-slate-400 mt-1">
+                            <span>100 m³</span><span>5.000 m³</span><span>20.000 m³</span><span>50.000 m³</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-2 italic">
+                            <i data-lucide="info" class="inline w-3 h-3"></i>
+                            Soğuk depolar için sektör standardı <strong>kWh/m³</strong>'tür (GCCA/IIR). Hacim, soğutulması gereken hava miktarını belirler.
+                        </p>
+                    </div>
+
+                    <!-- DEPO TİPİ -->
+                    <div>
+                        <label class="text-sm font-semibold text-slate-700 mb-2 block">Karşılaştırılan Yapay Depo Tipi</label>
+                        <select id="input-depo" onchange="hesaplaVeGoster()"
+                            class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-green-400 outline-none bg-slate-50">
+                            <option value="cold">🥔 Soğuk Depo (0-4°C, meyve/sebze) — 50 kWh/m³</option>
+                            <option value="frozen">🧊 Derin Dondurucu (-18°C) — 90 kWh/m³</option>
+                            <option value="climate">🌡️ İklimli Depo (15°C, şarap/tahıl) — 30 kWh/m³</option>
+                            <option value="standard">📦 Standart Ambar — 18 kWh/m³</option>
+                        </select>
+                        <p class="text-xs text-slate-400 mt-1">Kaynak: GCCA Cold Storage Energy Benchmarks 2023</p>
+                    </div>
+
+                    <!-- ÜRÜN TİPİ -->
+                    <div>
+                        <label class="text-sm font-semibold text-slate-700 mb-2 block">Depolanacak Ürün</label>
+                        <select id="input-urun" onchange="hesaplaVeGoster()"
+                            class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-green-400 outline-none bg-slate-50">
+                            <option value="patates">🥔 Patates (4-8°C) — Mağaraya İdeal ✅</option>
+                            <option value="elma">🍎 Elma (1-4°C) — Mağaraya Uygun ✅</option>
+                            <option value="sarap">🍷 Şarap (10-15°C) — Mükemmel Eşleşme ✅</option>
+                            <option value="peynir">🧀 Peynir (4-12°C) — Çok Uygun ✅</option>
+                            <option value="tahil">🌾 Tahıl (10-15°C) — Uygun ✅</option>
+                            <option value="et">🥩 Et (-18°C) — Mağara Uygun Değil ❌</option>
+                        </select>
+                        <p id="urun-uygunluk" class="text-xs mt-1"></p>
+                    </div>
+
+                    <!-- MEVCUT HAVA VERİSİ -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <p class="text-xs font-semibold text-slate-500 mb-2 flex items-center">
+                            <span class="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
+                            Nevşehir Anlık İklim Verisi (Open-Meteo API)
+                        </p>
+                        <div class="grid grid-cols-3 gap-3 text-center">
+                            <div>
+                                <p class="text-xs text-slate-400">Dış Sıcaklık</p>
+                                <p class="text-lg font-bold text-slate-800 font-mono-custom" id="live-sicaklik">--°C</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">Nem</p>
+                                <p class="text-lg font-bold text-slate-800 font-mono-custom" id="live-nem">--%</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">Mağara İçi</p>
+                                <p class="text-lg font-bold text-green-600 font-mono-custom">~11°C</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2 text-center">Mağara sıcaklığı tüf kayası sayesinde yıl boyunca ~11°C'de sabit. Geçmiş 6 ay gerçek tasarruf raporu için <a class="text-green-600 underline cursor-pointer" onclick="switchView('reports')">Raporlar sekmesine</a> bakın.</p>
+                    </div>
+                </div>
+
+                <!-- SAĞ: SONUÇLAR -->
+                <div class="space-y-4">
+                    <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                        <p class="text-xs font-semibold text-slate-500 mb-1">Hesaplama Detayı (Şeffaflık)</p>
+                        <p class="text-sm text-slate-700 font-mono-custom">
+                            (<span id="r-ref" class="text-green-700">50</span> − <span id="r-op" class="text-orange-600 tooltip-trigger">5<span class="tooltip-box">Mağaranın sensör, aydınlatma, fan için harcadığı operasyonel yük. Tam sıfır değil — ISO 14064 dürüstlüğü.</span></span>) × Hacim × <span class="text-blue-700">0.522</span>
+                        </p>
+                        <div class="mt-2 grid grid-cols-4 gap-2 text-center text-xs">
+                            <div class="bg-white rounded-lg p-2">
+                                <p class="text-slate-400">Ref. kWh/m³</p>
+                                <p class="font-bold text-slate-700 font-mono-custom" id="r-ref-display">50.0</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-2">
+                                <p class="text-slate-400">Sıc. Düz.</p>
+                                <p class="font-bold text-slate-700 font-mono-custom" id="r-katsayi">1.000</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-2">
+                                <p class="text-slate-400">Mağara kWh</p>
+                                <p class="font-bold text-orange-600 font-mono-custom">5.0</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-2 tooltip-trigger">
+                                <p class="text-slate-400">CO₂ Faktör</p>
+                                <p class="font-bold text-blue-600 font-mono-custom">0.522</p>
+                                <span class="tooltip-box">TEİAŞ/IEA 2023 Türkiye elektrik şebeke karbon yoğunluğu (kg CO₂/kWh)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-5 bg-green-600 rounded-2xl text-white">
+                        <p class="text-sm text-green-200 mb-1">Yıllık Net Karbon Tasarrufu</p>
+                        <h3 class="text-4xl font-bold font-mono-custom" id="s-ton">-- Ton CO₂e</h3>
+                        <p class="text-xs text-green-300 mt-1">ISO 14064 metodolojisi · Brüt − Operasyonel Yük</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="text-xs font-bold text-emerald-700">VERRA VCS</span>
+                                <span class="text-xs text-emerald-500">$10/Ton</span>
+                            </div>
+                            <p class="text-2xl font-bold text-emerald-700 font-mono-custom" id="s-verra">$--</p>
+                            <p class="text-xs text-emerald-500 mt-1" id="s-verra-tl">≈ ₺--</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="text-xs font-bold text-blue-700">GOLD STANDARD</span>
+                                <span class="text-xs text-blue-500">$30/Ton</span>
+                            </div>
+                            <p class="text-2xl font-bold text-blue-700 font-mono-custom" id="s-gold">$--</p>
+                            <p class="text-xs text-blue-500 mt-1" id="s-gold-tl">≈ ₺--</p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <p class="text-xs font-semibold text-slate-600 mb-3">Tasarruf Kaynağı Dağılımı</p>
+                        <div class="space-y-2">
+                            <div>
+                                <div class="flex justify-between text-xs text-slate-500 mb-1">
+                                    <span>⚡ Elektrik Tasarrufu (~%85)</span>
+                                    <span class="font-mono-custom" id="elek-ton">-- Ton</span>
+                                </div>
+                                <div class="w-full bg-slate-200 h-2 rounded-full">
+                                    <div class="bg-green-500 h-full rounded-full" style="width:85%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs text-slate-500 mb-1">
+                                    <span>🧪 Soğutucu Gaz Önleme (~%15)</span>
+                                    <span class="font-mono-custom" id="gaz-ton">-- Ton</span>
+                                </div>
+                                <div class="w-full bg-slate-200 h-2 rounded-full">
+                                    <div class="bg-blue-500 h-full rounded-full" style="width:15%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2 italic">R-410A gazı GWP=2.088 (Kaynak: IPCC AR5). Yıllık ~%5 kaçak varsayımı (ASHRAE 147).</p>
+                    </div>
+
+                    <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start space-x-2">
+                        <i data-lucide="info" class="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5"></i>
+                        <p class="text-xs text-yellow-800">
+                            <strong>CORSIA Uyumlu:</strong> Verra VCS sertifikamız ICAO CORSIA programı kapsamında 193 ülkedeki havayollarının zorunlu kompanzasyon yükümlülüklerini karşılar.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="p-4 border-t border-green-900 text-xs text-slate-500">
-            v2.0.0 · Hackathon Demo · ISO 14064
-        </div>
-    </aside>
-
-    <!-- ANA İÇERİK -->
-    <main class="flex-1 flex flex-col overflow-y-auto">
-
-        <!-- HEADER -->
-        <header class="bg-white border-b h-16 flex items-center justify-between px-8 sticky top-0 z-50 shadow-sm">
-            <div class="flex items-center space-x-6">
-                <h1 class="text-base font-semibold text-slate-800">Operasyonel Genel Bakış</h1>
-                <div class="hidden lg:flex items-center space-x-4 text-sm text-slate-500">
-                    <span class="flex items-center bg-slate-50 px-3 py-1 rounded-full">
-                        <i data-lucide="trending-up" class="w-3 h-3 mr-1 text-green-500"></i>
-                        USD/TRY: <span id="usd-rate" class="ml-1 font-semibold text-slate-800 animate-pulse">...</span>
-                    </span>
-                    <span class="flex items-center bg-slate-50 px-3 py-1 rounded-full">
-                        <i data-lucide="globe" class="w-3 h-3 mr-1 text-blue-500"></i>
-                        Verra: <span class="ml-1 font-semibold text-slate-800">$10/Ton</span>
-                    </span>
-                    <span class="flex items-center bg-slate-50 px-3 py-1 rounded-full">
-                        <i data-lucide="award" class="w-3 h-3 mr-1 text-yellow-500"></i>
-                        Gold Std: <span class="ml-1 font-semibold text-slate-800">$30/Ton</span>
-                    </span>
-                </div>
-            </div>
-            <div class="flex items-center space-x-3">
-                <div class="text-right hidden sm:block">
-                    <p class="text-xs text-slate-400">Son Güncelleme</p>
-                    <p class="text-sm font-semibold text-slate-700 font-mono-custom" id="last-update">--:--:--</p>
-                </div>
-                <div class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
-                    <i data-lucide="user" class="text-green-600 w-4 h-4"></i>
-                </div>
-            </div>
-        </header>
-
-        <div class="p-6 space-y-6">
-
-            <!-- ÜST KARTLar (4 adet) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs text-slate-500 font-medium">Net Karbon Tasarrufu</p>
-                            <h3 class="text-2xl font-bold mt-1 text-slate-800 font-mono-custom" id="net-carbon">142.5 Ton</h3>
-                        </div>
-                        <div class="p-2 bg-green-50 rounded-lg text-green-600">
-                            <i data-lucide="leaf" class="w-5 h-5"></i>
-                        </div>
-                    </div>
-                    <p class="text-xs text-green-600 mt-3 flex items-center font-semibold">
-                        <i data-lucide="arrow-up-right" class="w-3 h-3 mr-1"></i> %12.4 geçen aydan fazla
-                    </p>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs text-slate-500 font-medium">Toplam Portföy Değeri</p>
-                            <h3 class="text-xl font-bold mt-1 text-green-600 font-mono-custom" id="portfolio-value">Hesaplanıyor...</h3>
-                        </div>
-                        <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
-                            <i data-lucide="wallet" class="w-5 h-5"></i>
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-3">1 USD = <span class="current-usd font-semibold">...</span> ₺ (Canlı)</p>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs text-slate-500 font-medium">Enerji Tasarrufu</p>
-                            <h3 class="text-2xl font-bold mt-1 text-slate-800 font-mono-custom">%98.2</h3>
-                        </div>
-                        <div class="p-2 bg-orange-50 rounded-lg text-orange-500">
-                            <i data-lucide="zap" class="w-5 h-5"></i>
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-3">Yapay soğuk depolara kıyasla</p>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs text-slate-500 font-medium">Aktif Mağara Alanı</p>
-                            <h3 class="text-2xl font-bold mt-1 text-slate-800 font-mono-custom">12.450 m²</h3>
-                        </div>
-                        <div class="p-2 bg-slate-50 rounded-lg text-slate-500">
-                            <i data-lucide="layers" class="w-5 h-5"></i>
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-3">Kapadokya Bölge Geneli</p>
-                </div>
-            </div>
-
-            <!-- CANLI KARBON HESAPLAYICI (YENİ BÖLÜM) -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+        <!-- HARİTA + GRAFİK -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-4">
                     <h2 class="text-base font-bold text-slate-800 flex items-center">
-                        <i data-lucide="calculator" class="mr-2 text-green-500 w-5 h-5"></i>
-                        Canlı Karbon Tasarruf Hesaplayıcı
-                        <span class="ml-3 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">ISO 14064 · Open-Meteo API</span>
+                        <i data-lucide="map" class="mr-2 text-green-500 w-5 h-5"></i> Lojistik Karbon Ayak İzi (Konya → Nevşehir)
                     </h2>
-                    <div id="hava-durumu-badge" class="flex items-center space-x-2 px-3 py-1 rounded-full border text-sm font-semibold weather-normal">
-                        <i data-lucide="sun" class="w-4 h-4"></i>
-                        <span id="hava-label">Hava yükleniyor...</span>
-                    </div>
+                    <span class="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full font-semibold">OpenRouteService</span>
                 </div>
-
-                <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- SOL: GİRİŞLER -->
-                    <div class="space-y-6">
-
-                        <!-- HAVA KOŞUlU SENARYOLARI -->
-                        <div>
-                            <label class="text-sm font-semibold text-slate-700 mb-3 block">
-                                Hava Koşulu Senaryosu
-                                <span class="ml-2 text-xs text-slate-400 font-normal">(Tasarrufu etkiler)</span>
-                            </label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="scenario-card p-3 border-2 border-slate-200 rounded-xl" onclick="setSenaryo('yaz')" id="s-yaz">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-lg">☀️</span>
-                                        <div>
-                                            <p class="text-sm font-semibold text-slate-700">Yaz (35°C)</p>
-                                            <p class="text-xs text-slate-400">Max tasarruf</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="scenario-card p-3 border-2 border-slate-200 rounded-xl" onclick="setSenaryo('kis')" id="s-kis">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-lg">❄️</span>
-                                        <div>
-                                            <p class="text-sm font-semibold text-slate-700">Kış (0°C)</p>
-                                            <p class="text-xs text-slate-400">Min tasarruf</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="scenario-card p-3 border-2 border-slate-200 rounded-xl" onclick="setSenaryo('yagmurlu')" id="s-yagmurlu">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-lg">🌧️</span>
-                                        <div>
-                                            <p class="text-sm font-semibold text-slate-700">Yağmurlu (%95 nem)</p>
-                                            <p class="text-xs text-slate-400">Yüksek nem etkisi</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="scenario-card p-3 border-2 border-green-400 rounded-xl bg-green-50 active" onclick="setSenaryo('canli')" id="s-canli">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-lg animate-pulse-green">🔴</span>
-                                        <div>
-                                            <p class="text-sm font-semibold text-green-700">Canlı Veri</p>
-                                            <p class="text-xs text-green-500">Open-Meteo API</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- MAĞARA ALANI SLIDER -->
-                        <div>
-                            <label class="text-sm font-semibold text-slate-700 mb-2 block">
-                                Mağara Alanı: <span id="alan-goster" class="text-green-600 font-mono-custom">100 m²</span>
-                            </label>
-                            <input type="range" id="input-alan" min="10" max="1000" value="100"
-                                oninput="document.getElementById('alan-goster').innerText = this.value + ' m²'; hesaplaVeGoster()"
-                                class="w-full">
-                            <div class="flex justify-between text-xs text-slate-400 mt-1">
-                                <span>10 m²</span><span>500 m²</span><span>1000 m²</span>
-                            </div>
-                        </div>
-
-                        <!-- DEPO TİPİ -->
-                        <div>
-                            <label class="text-sm font-semibold text-slate-700 mb-2 block">Referans Depo Tipi (ASHRAE)</label>
-                            <select id="input-depo" onchange="hesaplaVeGoster()"
-                                class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-green-400 outline-none bg-slate-50">
-                                <option value="soguk">🥔 Soğuk Depo - Meyve/Sebze (350 kWh/m²)</option>
-                                <option value="dondurucu">🧊 Derin Dondurucu -18°C (600 kWh/m²)</option>
-                                <option value="iklimli">🌡️ İklimli Depo 15°C (180 kWh/m²)</option>
-                                <option value="standart">📦 Standart Ambar (120 kWh/m²)</option>
-                            </select>
-                        </div>
-
-                        <!-- MEVCUT HAVA VERİSİ -->
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                            <p class="text-xs font-semibold text-slate-500 mb-2">📡 Nevşehir Anlık İklim Verisi</p>
-                            <div class="grid grid-cols-3 gap-3 text-center">
-                                <div>
-                                    <p class="text-xs text-slate-400">Dış Sıcaklık</p>
-                                    <p class="text-lg font-bold text-slate-800 font-mono-custom" id="live-sicaklik">--°C</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-slate-400">Nem</p>
-                                    <p class="text-lg font-bold text-slate-800 font-mono-custom" id="live-nem">--%</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-slate-400">Mağara İçi</p>
-                                    <p class="text-lg font-bold text-green-600 font-mono-custom">~11°C</p>
-                                </div>
-                            </div>
-                            <p class="text-xs text-slate-400 mt-2 text-center">Mağara sıcaklığı tüf kayası sayesinde yıl boyunca ~11°C'de sabit</p>
-                        </div>
+                <div id="map-dashboard" class="map-canvas"></div>
+                <div class="mt-4 grid grid-cols-3 gap-3">
+                    <div class="p-3 bg-slate-50 rounded-xl">
+                        <p class="text-xs text-slate-500 mb-1">Rota Mesafesi</p>
+                        <p class="text-lg font-bold text-slate-800 font-mono-custom" id="route-distance">-- km</p>
                     </div>
-
-                    <!-- SAĞ: SONUÇLAR -->
-                    <div class="space-y-4">
-                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                            <p class="text-xs font-semibold text-slate-500 mb-1">Aktif Senaryo Sıcaklık Etkisi</p>
-                            <p class="text-sm text-slate-600" id="formul-goster">
-                                Tasarruf = (Referans kWh × Sıcaklık Düzeltmesi × Nem Düzeltmesi) × Alan × 0.522
-                            </p>
-                            <div class="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
-                                <div class="bg-white rounded-lg p-2">
-                                    <p class="text-slate-400">Ref. kWh/m²</p>
-                                    <p class="font-bold text-slate-700 font-mono-custom" id="r-ref">350</p>
-                                </div>
-                                <div class="bg-white rounded-lg p-2">
-                                    <p class="text-slate-400">Sıc. Katsayı</p>
-                                    <p class="font-bold text-slate-700 font-mono-custom" id="r-katsayi">1.0</p>
-                                </div>
-                                <div class="bg-white rounded-lg p-2">
-                                    <p class="text-slate-400">Emisyon Fak.</p>
-                                    <p class="font-bold text-slate-700 font-mono-custom">0.522</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ANA SONUÇ -->
-                        <div class="p-5 bg-green-600 rounded-2xl text-white">
-                            <p class="text-sm text-green-200 mb-1">Yıllık Toplam Karbon Tasarrufu</p>
-                            <h3 class="text-4xl font-bold font-mono-custom" id="s-ton">-- Ton CO₂e</h3>
-                            <p class="text-xs text-green-300 mt-1">ISO 14064 · TEİAŞ/IEA 2023 Türkiye (0.522 kg CO₂/kWh)</p>
-                        </div>
-
-                        <!-- GELİR KARŞILAŞTIRMA -->
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                                <div class="flex items-center space-x-2 mb-1">
-                                    <span class="text-xs font-bold text-emerald-700">VERRA VCS</span>
-                                    <span class="text-xs text-emerald-500">$10/Ton</span>
-                                </div>
-                                <p class="text-2xl font-bold text-emerald-700 font-mono-custom" id="s-verra">$--</p>
-                                <p class="text-xs text-emerald-500 mt-1" id="s-verra-tl">≈ ₺--</p>
-                            </div>
-                            <div class="p-4 bg-blue-50 rounded-xl border border-blue-200">
-                                <div class="flex items-center space-x-2 mb-1">
-                                    <span class="text-xs font-bold text-blue-700">GOLD STANDARD</span>
-                                    <span class="text-xs text-blue-500">$30/Ton</span>
-                                </div>
-                                <p class="text-2xl font-bold text-blue-700 font-mono-custom" id="s-gold">$--</p>
-                                <p class="text-xs text-blue-500 mt-1" id="s-gold-tl">≈ ₺--</p>
-                            </div>
-                        </div>
-
-                        <!-- TASARRUF DAĞILIMI BAR -->
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                            <p class="text-xs font-semibold text-slate-600 mb-3">Tasarruf Kaynağı Dağılımı</p>
-                            <div class="space-y-2">
-                                <div>
-                                    <div class="flex justify-between text-xs text-slate-500 mb-1">
-                                        <span>⚡ Elektrik Tasarrufu (%85)</span>
-                                        <span class="font-mono-custom" id="elek-ton">-- Ton</span>
-                                    </div>
-                                    <div class="w-full bg-slate-200 h-2 rounded-full">
-                                        <div class="bg-green-500 h-full rounded-full result-bar" id="bar-elek" style="width:0%"></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="flex justify-between text-xs text-slate-500 mb-1">
-                                        <span>🧪 Soğutucu Gaz Önleme (%15)</span>
-                                        <span class="font-mono-custom" id="gaz-ton">-- Ton</span>
-                                    </div>
-                                    <div class="w-full bg-slate-200 h-2 rounded-full">
-                                        <div class="bg-blue-500 h-full rounded-full result-bar" id="bar-gaz" style="width:0%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- CORSIA NOTU -->
-                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start space-x-2">
-                            <i data-lucide="info" class="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5"></i>
-                            <p class="text-xs text-yellow-700">
-                                <strong>CORSIA Uyumlu:</strong> Verra sertifikamız ICAO CORSIA kapsamında 193 ülkedeki havayollarına doğrudan satılabilir. Havayolu idaresi ayrı onayı gerekmez.
-                            </p>
-                        </div>
+                    <div class="p-3 bg-red-50 rounded-xl border border-red-100">
+                        <p class="text-xs text-red-500 mb-1">Lojistik Emisyonu (25T TIR)</p>
+                        <p class="text-lg font-bold text-red-600 font-mono-custom" id="logistic-carbon">-- kg CO₂</p>
+                    </div>
+                    <div class="p-3 bg-green-50 rounded-xl border border-green-200">
+                        <p class="text-xs text-green-600 mb-1">Net Kazanç (Tasarruf − Lojistik)</p>
+                        <p class="text-lg font-bold text-green-700 font-mono-custom" id="net-after-logistics">-- Ton</p>
                     </div>
                 </div>
             </div>
-
-            <!-- HARİTA + GRAFİK -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-base font-bold text-slate-800 flex items-center">
-                            <i data-lucide="map" class="mr-2 text-green-500 w-5 h-5"></i> Lojistik Karbon Ayak İzi Analizi
-                        </h2>
-                        <span class="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full font-semibold animate-pulse">Canlı Rota</span>
-                    </div>
-                    <div id="map"></div>
-                    <div class="mt-4 grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-slate-50 rounded-xl">
-                            <p class="text-xs text-slate-500 mb-1">Rota Mesafesi (Konya → Nevşehir)</p>
-                            <p class="text-xl font-bold text-slate-800 font-mono-custom" id="route-distance">-- km</p>
-                        </div>
-                        <div class="p-4 bg-red-50 rounded-xl border border-red-100">
-                            <p class="text-xs text-red-500 mb-1">Lojistik Emisyonu (25 Ton TIR)</p>
-                            <p class="text-xl font-bold text-red-600 font-mono-custom" id="logistic-carbon">-- kg CO₂</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
-                    <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center">
-                        <i data-lucide="pie-chart" class="mr-2 text-blue-500 w-5 h-5"></i> Tasarruf Dağılımı
-                    </h2>
-                    <div class="flex-1 flex items-center justify-center">
-                        <canvas id="carbonChart"></canvas>
-                    </div>
-                    <div class="mt-4 space-y-2">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-500">Elektrik Tasarrufu</span>
-                            <span class="font-semibold text-green-600">%85</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full">
-                            <div class="bg-green-500 h-full w-[85%] rounded-full"></div>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-500">Soğutucu Gaz Önleme</span>
-                            <span class="font-semibold text-blue-600">%15</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full">
-                            <div class="bg-blue-500 h-full w-[15%] rounded-full"></div>
-                        </div>
-                    </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center">
+                    <i data-lucide="pie-chart" class="mr-2 text-blue-500 w-5 h-5"></i> Tasarruf Dağılımı
+                </h2>
+                <div class="flex-1 flex items-center justify-center" style="min-height:200px">
+                    <canvas id="carbonChart"></canvas>
                 </div>
             </div>
+        </div>
 
-            <!-- TABLO -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                    <h2 class="text-base font-bold text-slate-800">Aktif Depolama Birimleri</h2>
-                    <button class="text-sm text-green-600 font-semibold hover:underline">Tümünü Gör</button>
+        <!-- TABLO -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-base font-bold text-slate-800">Aktif Depolama Birimleri</h2>
+                <button onclick="switchView('caves')" class="text-sm text-green-600 font-semibold hover:underline flex items-center">
+                    Tümünü Gör <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i>
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold">
+                        <tr>
+                            <th class="px-6 py-4">Mağara ID</th>
+                            <th class="px-6 py-4">Lokasyon</th>
+                            <th class="px-6 py-4">Hacim</th>
+                            <th class="px-6 py-4">Ürün</th>
+                            <th class="px-6 py-4">Yıllık Karbon</th>
+                            <th class="px-6 py-4">Aylık Kazanç (₺)</th>
+                            <th class="px-6 py-4">Sertifika</th>
+                            <th class="px-6 py-4">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-slate-700 divide-y divide-slate-50" id="dashboard-cave-table">
+                        <!-- Doldurulacak -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MAĞARA AĞLARI VIEW ============ -->
+    <div id="view-caves" class="view-content p-6 space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center">
+                        <i data-lucide="map-pin" class="mr-2 text-green-500 w-5 h-5"></i> Kapadokya Mağara Ağı
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">Bölgedeki tüm aktif ve potansiyel doğal depolar</p>
                 </div>
+                <div class="flex items-center space-x-2">
+                    <button class="tab-btn active px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold" id="tab-grid" onclick="setCaveView('grid')">
+                        <i data-lucide="grid-3x3" class="inline w-4 h-4 mr-1"></i> Grid
+                    </button>
+                    <button class="tab-btn px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold" id="tab-map" onclick="setCaveView('map')">
+                        <i data-lucide="map" class="inline w-4 h-4 mr-1"></i> Harita
+                    </button>
+                </div>
+            </div>
+            <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="p-3 bg-green-50 rounded-xl border border-green-100">
+                    <p class="text-xs text-green-600">Aktif Mağara</p>
+                    <p class="text-2xl font-bold text-green-700 font-mono-custom" id="caves-active-count">--</p>
+                </div>
+                <div class="p-3 bg-yellow-50 rounded-xl border border-yellow-100">
+                    <p class="text-xs text-yellow-600">Beklemede</p>
+                    <p class="text-2xl font-bold text-yellow-700 font-mono-custom" id="caves-pending-count">--</p>
+                </div>
+                <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <p class="text-xs text-blue-600">Toplam Hacim</p>
+                    <p class="text-2xl font-bold text-blue-700 font-mono-custom" id="caves-total-volume">--</p>
+                </div>
+                <div class="p-3 bg-purple-50 rounded-xl border border-purple-100">
+                    <p class="text-xs text-purple-600">Toplam Yıllık Karbon</p>
+                    <p class="text-2xl font-bold text-purple-700 font-mono-custom" id="caves-total-carbon">--</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="caves-grid-view" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Doldurulacak -->
+        </div>
+
+        <div id="caves-map-view" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div id="map-caves" class="map-large"></div>
+        </div>
+    </div>
+
+    <!-- ============ LOJİSTİK PLANER VIEW ============ -->
+    <div id="view-logistics" class="view-content p-6 space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center">
+                <i data-lucide="truck" class="mr-2 text-green-500 w-5 h-5"></i> Akıllı Lojistik Planlayıcı
+            </h2>
+            <p class="text-sm text-slate-500 mt-1">Çıkış noktanızı seçin, sistem en uygun mağarayı önersin (mesafe + uyumluluk + kapasite)</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-1 space-y-4">
+                <div>
+                    <label class="text-sm font-semibold text-slate-700 mb-2 block">Çıkış Şehri</label>
+                    <select id="logistics-origin" onchange="planLogistics()" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
+                        <option value="konya">Konya</option>
+                        <option value="ankara">Ankara</option>
+                        <option value="kayseri">Kayseri</option>
+                        <option value="adana">Adana</option>
+                        <option value="izmir">İzmir</option>
+                        <option value="istanbul">İstanbul</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-slate-700 mb-2 block">Yük Miktarı (Ton)</label>
+                    <input type="number" id="logistics-load" value="25" min="1" max="100" onchange="planLogistics()"
+                        class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-slate-700 mb-2 block">Ürün</label>
+                    <select id="logistics-product" onchange="planLogistics()" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50">
+                        <option value="patates">🥔 Patates</option>
+                        <option value="elma">🍎 Elma</option>
+                        <option value="sarap">🍷 Şarap</option>
+                        <option value="peynir">🧀 Peynir</option>
+                        <option value="tahil">🌾 Tahıl</option>
+                    </select>
+                </div>
+                <div class="p-4 bg-green-50 rounded-xl border border-green-200">
+                    <p class="text-xs font-semibold text-green-700 mb-2">📍 Önerilen Mağara</p>
+                    <p class="text-base font-bold text-green-800" id="suggested-cave-name">--</p>
+                    <p class="text-xs text-green-600 mt-1" id="suggested-cave-reason">--</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="p-3 bg-slate-50 rounded-xl">
+                        <p class="text-xs text-slate-500">Mesafe</p>
+                        <p class="text-base font-bold text-slate-800 font-mono-custom" id="logistics-distance">--</p>
+                    </div>
+                    <div class="p-3 bg-red-50 rounded-xl">
+                        <p class="text-xs text-red-500">Lojistik CO₂</p>
+                        <p class="text-base font-bold text-red-700 font-mono-custom" id="logistics-co2">--</p>
+                    </div>
+                </div>
+                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <p class="text-xs text-emerald-600">Net Karbon Kazancı (1 dönem)</p>
+                    <p class="text-xl font-bold text-emerald-700 font-mono-custom" id="logistics-net">-- Ton CO₂</p>
+                    <p class="text-xs text-emerald-500 mt-1" id="logistics-revenue">Verra'da: $-- · ₺--</p>
+                </div>
+                <button onclick="signContract()" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl flex items-center justify-center transition">
+                    <i data-lucide="file-signature" class="w-4 h-4 mr-2"></i> Kiralama Sözleşmesi İmzala
+                </button>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
+                <div id="map-logistics" class="map-large"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ KARBON KREDİLERİ VIEW ============ -->
+    <div id="view-credits" class="view-content p-6 space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center">
+                        <i data-lucide="leaf" class="mr-2 text-green-500 w-5 h-5"></i> Karbon Kredisi Marketplace
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">Aktif krediler, alıcı havayolları ve son işlemler</p>
+                </div>
+                <div class="flex items-center space-x-2 text-xs">
+                    <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full font-semibold">VCS Verra</span>
+                    <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold">Gold Standard</span>
+                    <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-semibold">CORSIA Uyumlu</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h3 class="text-base font-bold text-slate-800 mb-4">Aktif Karbon Kredileri</h3>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-500">
                             <tr>
-                                <th class="px-6 py-4">Mağara ID</th>
-                                <th class="px-6 py-4">Lokasyon</th>
-                                <th class="px-6 py-4">Ürün Tipi</th>
-                                <th class="px-6 py-4">Brüt Karbon Kredisi</th>
-                                <th class="px-6 py-4">Net Kazanç (₺)</th>
-                                <th class="px-6 py-4">Sertifika</th>
-                                <th class="px-6 py-4">Durum</th>
+                                <th class="px-3 py-3 text-left">Kredi ID</th>
+                                <th class="px-3 py-3 text-left">Mağara</th>
+                                <th class="px-3 py-3 text-left">Ton CO₂</th>
+                                <th class="px-3 py-3 text-left">Sertifika</th>
+                                <th class="px-3 py-3 text-left">Durum</th>
+                                <th class="px-3 py-3 text-left">Hash</th>
                             </tr>
                         </thead>
-                        <tbody class="text-sm text-slate-700 divide-y divide-slate-50" id="magara-tablo">
-                            <tr>
-                                <td class="px-6 py-4 font-semibold font-mono-custom">#ANT-001</td>
-                                <td class="px-6 py-4 text-slate-500">Ürgüp / Nevşehir</td>
-                                <td class="px-6 py-4 font-semibold text-orange-600">🥔 Patates</td>
-                                <td class="px-6 py-4 font-semibold">15.7 Ton</td>
-                                <td class="px-6 py-4 font-bold text-green-600" id="tablo-kazanc-001">₺ --</td>
-                                <td class="px-6 py-4"><span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-md font-semibold">Verra VCS</span></td>
-                                <td class="px-6 py-4"><span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-md">Aktif</span></td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 font-semibold font-mono-custom">#ANT-002</td>
-                                <td class="px-6 py-4 text-slate-500">Göreme / Nevşehir</td>
-                                <td class="px-6 py-4 font-semibold text-purple-600">🍷 Şarap</td>
-                                <td class="px-6 py-4 font-semibold">8.3 Ton</td>
-                                <td class="px-6 py-4 font-bold text-green-600">₺ --</td>
-                                <td class="px-6 py-4"><span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md font-semibold">Gold Standard</span></td>
-                                <td class="px-6 py-4"><span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-md">Aktif</span></td>
-                            </tr>
-                        </tbody>
+                        <tbody id="credits-table" class="divide-y divide-slate-50"></tbody>
                     </table>
                 </div>
             </div>
-
+            <div class="space-y-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-base font-bold text-slate-800 mb-3">Aktif Alıcılar</h3>
+                    <div class="space-y-3" id="buyers-list"></div>
+                </div>
+                <div class="bg-gradient-to-br from-green-600 to-emerald-700 p-6 rounded-2xl text-white">
+                    <p class="text-sm text-green-200 mb-1">Toplam Satış (YTD)</p>
+                    <p class="text-3xl font-bold font-mono-custom">$24.380</p>
+                    <p class="text-xs text-green-200 mt-1">142.5 ton CO₂e satıldı</p>
+                    <p class="text-xs text-green-100 mt-3 border-t border-green-500 pt-3">
+                        💡 1 ton CO₂e = ~5 ağacın yıllık emdiği karbon
+                    </p>
+                </div>
+            </div>
         </div>
-    </main>
 
-    <script>
-        // ========================
-        // GLOBAL DEĞİŞKENLER
-        // ========================
-        let anlikSicaklik = 11;
-        let anlikNem = 75;
-        let aktifSenaryo = 'canli';
-        let liveUsdRate = 38;
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h3 class="text-base font-bold text-slate-800 mb-4">Son İşlemler (Mock Blockchain Ledger)</h3>
+            <div id="transactions-list" class="space-y-2"></div>
+        </div>
+    </div>
 
-        const REFERANS_DEPO = {
-            "soguk": 350,
-            "dondurucu": 600,
-            "iklimli": 180,
-            "standart": 120
-        };
+    <!-- ============ RAPORLAR VIEW ============ -->
+    <div id="view-reports" class="view-content p-6 space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center">
+                        <i data-lucide="bar-chart-3" class="mr-2 text-green-500 w-5 h-5"></i> Geçmiş Veri Raporları
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">
+                        <strong>Open-Meteo Archive API</strong> üzerinden Nevşehir'in <strong>gerçek</strong> son aylardaki sıcaklık-nem verisiyle hesaplanmış tasarruf
+                    </p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button class="tab-btn px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold" data-period="30" onclick="setReportPeriod(30)">Son 1 Ay</button>
+                    <button class="tab-btn active px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold" data-period="90" onclick="setReportPeriod(90)">Son 3 Ay</button>
+                    <button class="tab-btn px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold" data-period="180" onclick="setReportPeriod(180)">Son 6 Ay</button>
+                </div>
+            </div>
+        </div>
 
-        // ========================
-        // İKONLARI BAŞLAT
-        // ========================
-        lucide.createIcons();
+        <div id="report-loading" class="bg-white p-12 rounded-2xl shadow-sm border border-slate-100 text-center">
+            <i data-lucide="loader" class="w-8 h-8 text-green-500 animate-spin inline-block"></i>
+            <p class="text-sm text-slate-500 mt-3">Open-Meteo Archive'dan gerçek hava verisi çekiliyor...</p>
+        </div>
 
-        // ========================
-        // 1. KARBON HESAPLAMA FONKSİYONU (ISO 14064)
-        // ========================
-        function hesaplaKarbonTasarrufu(alan, depoTipi, sicaklik, nem) {
-            const bazKwh = REFERANS_DEPO[depoTipi];
+        <div id="report-content" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-xs text-slate-500">Toplam Tasarruf</p>
+                    <p class="text-2xl font-bold text-green-600 font-mono-custom mt-1" id="rep-total-tons">--</p>
+                    <p class="text-xs text-slate-400 mt-1">Ton CO₂e</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-xs text-slate-500">Toplam Gelir</p>
+                    <p class="text-2xl font-bold text-emerald-600 font-mono-custom mt-1" id="rep-total-revenue">--</p>
+                    <p class="text-xs text-slate-400 mt-1" id="rep-total-revenue-tl">--</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-xs text-slate-500">Ortalama Sıcaklık</p>
+                    <p class="text-2xl font-bold text-blue-600 font-mono-custom mt-1" id="rep-avg-temp">--</p>
+                    <p class="text-xs text-slate-400 mt-1" id="rep-temp-range">--</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <p class="text-xs text-slate-500">En Verimli Gün</p>
+                    <p class="text-2xl font-bold text-orange-600 font-mono-custom mt-1" id="rep-best-day">--</p>
+                    <p class="text-xs text-slate-400 mt-1" id="rep-best-day-tons">--</p>
+                </div>
+            </div>
 
-            // Sıcaklık düzeltmesi: Her 1°C fazla = %1.5 fazla enerji (ASHRAE yaklaşımı)
-            const sicaklikDuzeltme = 1 + (0.015 * (sicaklik - 15));
-            const duzeltilmisKwh = bazKwh * Math.max(sicaklikDuzeltme, 0.7);
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h3 class="text-base font-bold text-slate-800 mb-4">Günlük Karbon Tasarrufu</h3>
+                <div style="height:300px"><canvas id="reportDailyChart"></canvas></div>
+            </div>
 
-            // Nem düzeltmesi: %80 üzeri nem = referans depo %8 fazla enerji harcar
-            const nemDuzeltme = nem > 80 ? 1.08 : 1.0;
-            const finalKwh = duzeltilmisKwh * nemDuzeltme;
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-base font-bold text-slate-800 mb-4">Sıcaklık-Tasarruf İlişkisi</h3>
+                    <div style="height:280px"><canvas id="reportScatterChart"></canvas></div>
+                    <p class="text-xs text-slate-400 mt-2 italic">Dış sıcaklık arttıkça yapay deponun harcayacağı enerji artar → mağaranın tasarrufu büyür.</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="text-base font-bold text-slate-800 mb-4">Aylık Gelir Dağılımı</h3>
+                    <div style="height:280px"><canvas id="reportMonthlyChart"></canvas></div>
+                </div>
+            </div>
 
-            // Mağara enerji tüketimi = 0 (doğal soğutma)
-            const magara_kwh = 0;
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base font-bold text-slate-800">Rapor Detayları</h3>
+                    <button onclick="downloadReport()" class="text-sm bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center">
+                        <i data-lucide="download" class="w-4 h-4 mr-1"></i> CSV İndir
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                            <tr>
+                                <th class="px-3 py-3 text-left">Tarih</th>
+                                <th class="px-3 py-3 text-left">Ort. Sıcaklık</th>
+                                <th class="px-3 py-3 text-left">Ort. Nem</th>
+                                <th class="px-3 py-3 text-left">Tasarruf (Ton)</th>
+                                <th class="px-3 py-3 text-left">Gelir Verra ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-data-table" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
 
-            // Yıllık tasarruf hesabı
-            const tasarrufKwh = (finalKwh - magara_kwh) * alan;
-            const emisyonFaktoru = 0.522; // TEİAŞ/IEA 2023 Türkiye
-            const tasarrufKgCO2 = tasarrufKwh * emisyonFaktoru;
-            const tasarrufTon = tasarrufKgCO2 / 1000;
+<!-- ============ MODALLAR ============ -->
+<div id="cave-modal" class="modal-backdrop" onclick="if(event.target===this) closeModal('cave-modal')">
+    <div class="modal-content p-0 fade-in" id="cave-modal-content"></div>
+</div>
 
-            return {
-                referansKwh: finalKwh.toFixed(1),
-                sicaklikKatsayi: Math.max(sicaklikDuzeltme, 0.7).toFixed(3),
-                tasarrufTon: tasarrufTon.toFixed(2),
-                gelirVerra: (tasarrufTon * 10).toFixed(2),
-                gelirGold: (tasarrufTon * 30).toFixed(2),
-                elektrikTon: (tasarrufTon * 0.85).toFixed(2),
-                gazTon: (tasarrufTon * 0.15).toFixed(2)
-            };
-        }
+<div id="profile-modal" class="modal-backdrop" onclick="if(event.target===this) closeModal('profile-modal')">
+    <div class="modal-content p-6 fade-in" style="max-width:480px">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-slate-800">Kullanıcı Profili</h3>
+            <button onclick="closeModal('profile-modal')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="flex items-center space-x-4 mb-6">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xl font-bold">V</div>
+            <div>
+                <p class="text-base font-bold text-slate-800">Vertex Ekibi</p>
+                <p class="text-sm text-slate-500">vertexteam2026@gmail.com</p>
+                <p class="text-xs text-green-600 mt-1">⭐ Hackathon Demo Hesabı</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="p-3 bg-slate-50 rounded-xl">
+                <p class="text-xs text-slate-500">Yönetilen Mağara</p>
+                <p class="text-lg font-bold text-slate-800 font-mono-custom">8</p>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl">
+                <p class="text-xs text-slate-500">Toplam Karbon</p>
+                <p class="text-lg font-bold text-green-600 font-mono-custom">142.5 t</p>
+            </div>
+        </div>
+        <div class="space-y-2 text-sm">
+            <div class="flex items-center text-slate-600 hover:bg-slate-50 p-2 rounded-lg cursor-pointer">
+                <i data-lucide="settings" class="w-4 h-4 mr-3 text-slate-400"></i> Hesap Ayarları
+            </div>
+            <div class="flex items-center text-slate-600 hover:bg-slate-50 p-2 rounded-lg cursor-pointer">
+                <i data-lucide="key" class="w-4 h-4 mr-3 text-slate-400"></i> API Anahtarları
+            </div>
+            <div class="flex items-center text-slate-600 hover:bg-slate-50 p-2 rounded-lg cursor-pointer">
+                <i data-lucide="bell" class="w-4 h-4 mr-3 text-slate-400"></i> Bildirimler
+            </div>
+            <div class="flex items-center text-red-600 hover:bg-red-50 p-2 rounded-lg cursor-pointer">
+                <i data-lucide="log-out" class="w-4 h-4 mr-3"></i> Çıkış Yap
+            </div>
+        </div>
+    </div>
+</div>
 
-        // ========================
-        // 2. ARAYÜZÜ GÜNCELLE
-        // ========================
-        function hesaplaVeGoster() {
-            const alan = parseFloat(document.getElementById('input-alan').value);
-            const depo = document.getElementById('input-depo').value;
+<div id="contract-modal" class="modal-backdrop" onclick="if(event.target===this) closeModal('contract-modal')">
+    <div class="modal-content p-6 fade-in" style="max-width:520px">
+        <div class="text-center">
+            <div class="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <i data-lucide="check-circle-2" class="w-8 h-8 text-green-600"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">Sözleşme Hazır!</h3>
+            <p class="text-sm text-slate-500 mb-4">Akıllı sözleşme blockchain'e kaydedildi</p>
+            <div class="bg-slate-50 p-4 rounded-xl text-left text-xs font-mono-custom break-all">
+                <p class="text-slate-400">TX Hash:</p>
+                <p class="text-slate-700" id="contract-hash">0x...</p>
+                <p class="text-slate-400 mt-2">Blok:</p>
+                <p class="text-slate-700">#<span id="contract-block">--</span></p>
+            </div>
+            <button onclick="closeModal('contract-modal')" class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg">Tamam</button>
+        </div>
+    </div>
+</div>
 
-            let sicaklik = anlikSicaklik;
-            let nem = anlikNem;
+<script>
+// ================================================================
+// SABİTLER VE STATE
+// ================================================================
+const REFERENCE_STORAGE = {
+    cold:     { name: 'Soğuk Depo (0-4°C)',     kwh_m3: 50,  ideal_temp: 4 },
+    frozen:   { name: 'Derin Dondurucu (-18°C)', kwh_m3: 90,  ideal_temp: -18 },
+    climate:  { name: 'İklimli Depo (15°C)',     kwh_m3: 30,  ideal_temp: 15 },
+    standard: { name: 'Standart Ambar',          kwh_m3: 18,  ideal_temp: 20 }
+};
+const CAVE_OPERATIONAL_KWH_M3 = 5;  // Mağara: aydınlatma + sensör + fan
+const EMISSION_FACTOR = 0.522;       // TEİAŞ/IEA 2023 Türkiye
+const CAVE_INTERIOR_TEMP = 11;       // °C, tüf kayası nedeniyle sabit
 
-            // Senaryo geçersizleri
-            if (aktifSenaryo === 'yaz') { sicaklik = 35; nem = 45; }
-            else if (aktifSenaryo === 'kis') { sicaklik = 0; nem = 60; }
-            else if (aktifSenaryo === 'yagmurlu') { sicaklik = 18; nem = 95; }
+const CAVES = [
+    { id: 'ANT-001', name: 'Ürgüp Patates Mağarası', location: 'Ürgüp / Nevşehir', coords: [38.630, 34.912], volume: 1200, productType: 'patates', productEmoji: '🥔', owner: 'Mehmet Yıldız', ownerPhone: '+90 384 xxx xx xx', status: 'active', cert: 'Verra VCS', established: '2024-03-15', monthlyTons: 1.8 },
+    { id: 'ANT-002', name: 'Göreme Şarap Kemeri',     location: 'Göreme / Nevşehir', coords: [38.642, 34.831], volume: 800,  productType: 'sarap',   productEmoji: '🍷', owner: 'Ayşe Kara',     ownerPhone: '+90 384 xxx xx xx', status: 'active', cert: 'Gold Standard', established: '2024-05-22', monthlyTons: 0.9 },
+    { id: 'ANT-003', name: 'Avanos Çömlek Deposu',     location: 'Avanos / Nevşehir', coords: [38.715, 34.847], volume: 600,  productType: 'tahil',   productEmoji: '🌾', owner: 'Ali Çelik',     ownerPhone: '+90 384 xxx xx xx', status: 'active', cert: 'Verra VCS', established: '2025-01-10', monthlyTons: 0.6 },
+    { id: 'ANT-004', name: 'Uçhisar Tahıl Mağarası',  location: 'Uçhisar / Nevşehir', coords: [38.629, 34.808], volume: 1500, productType: 'tahil',   productEmoji: '🌾', owner: 'Fatma Demir',   ownerPhone: '+90 384 xxx xx xx', status: 'active', cert: 'Verra VCS', established: '2024-08-03', monthlyTons: 2.1 },
+    { id: 'ANT-005', name: 'Mustafapaşa Elma Deposu', location: 'Mustafapaşa / Nevşehir', coords: [38.586, 34.905], volume: 950, productType: 'elma',  productEmoji: '🍎', owner: 'Hasan Aydın',   ownerPhone: '+90 384 xxx xx xx', status: 'active', cert: 'Gold Standard', established: '2024-11-18', monthlyTons: 1.4 },
+    { id: 'ANT-006', name: 'Derinkuyu Yer Altı Şehri', location: 'Derinkuyu / Nevşehir', coords: [38.373, 34.734], volume: 3200, productType: 'patates', productEmoji: '🥔', owner: 'Belediye Kooperatifi', ownerPhone: '+90 384 xxx xx xx', status: 'pending', cert: 'Beklemede', established: '2026-01-05', monthlyTons: 0 },
+    { id: 'ANT-007', name: 'Kaymaklı Patates Deposu', location: 'Kaymaklı / Nevşehir', coords: [38.466, 34.747], volume: 2400, productType: 'patates', productEmoji: '🥔', owner: 'Ahmet Şahin',   ownerPhone: '+90 384 xxx xx xx', status: 'active', cert: 'Verra VCS', established: '2024-02-20', monthlyTons: 3.5 },
+    { id: 'ANT-008', name: 'Ihlara Vadisi Peynir Mağarası', location: 'Ihlara / Aksaray', coords: [38.260, 34.296], volume: 750, productType: 'peynir',  productEmoji: '🧀', owner: 'Köy Kooperatifi', ownerPhone: '+90 382 xxx xx xx', status: 'active', cert: 'Gold Standard', established: '2025-03-01', monthlyTons: 1.1 }
+];
 
-            const sonuc = hesaplaKarbonTasarrufu(alan, depo, sicaklik, nem);
+const ORIGIN_CITIES = {
+    konya:    { name: 'Konya',    coords: [37.8746, 32.4931] },
+    ankara:   { name: 'Ankara',   coords: [39.9334, 32.8597] },
+    kayseri:  { name: 'Kayseri',  coords: [38.7322, 35.4853] },
+    adana:    { name: 'Adana',    coords: [37.0000, 35.3213] },
+    izmir:    { name: 'İzmir',    coords: [38.4192, 27.1287] },
+    istanbul: { name: 'İstanbul', coords: [41.0082, 28.9784] }
+};
 
-            // Sonuç alanları
-            document.getElementById('s-ton').innerText = sonuc.tasarrufTon + ' Ton CO₂e';
-            document.getElementById('s-verra').innerText = '$' + sonuc.gelirVerra;
-            document.getElementById('s-gold').innerText = '$' + sonuc.gelirGold;
-            document.getElementById('s-verra-tl').innerText = '≈ ₺' + (parseFloat(sonuc.gelirVerra) * liveUsdRate).toLocaleString('tr-TR', {maximumFractionDigits: 0});
-            document.getElementById('s-gold-tl').innerText = '≈ ₺' + (parseFloat(sonuc.gelirGold) * liveUsdRate).toLocaleString('tr-TR', {maximumFractionDigits: 0});
+const PRODUCT_INFO = {
+    patates: { name: 'Patates',  idealTemp: '4-8°C',   caveCompat: true,  storageType: 'cold' },
+    elma:    { name: 'Elma',     idealTemp: '1-4°C',   caveCompat: true,  storageType: 'cold' },
+    sarap:   { name: 'Şarap',    idealTemp: '10-15°C', caveCompat: true,  storageType: 'climate' },
+    peynir:  { name: 'Peynir',   idealTemp: '4-12°C',  caveCompat: true,  storageType: 'cold' },
+    tahil:   { name: 'Tahıl',    idealTemp: '10-15°C', caveCompat: true,  storageType: 'climate' },
+    et:      { name: 'Et',       idealTemp: '-18°C',   caveCompat: false, storageType: 'frozen' }
+};
 
-            // Bar grafik
-            document.getElementById('elek-ton').innerText = sonuc.elektrikTon + ' Ton';
-            document.getElementById('gaz-ton').innerText = sonuc.gazTon + ' Ton';
-            document.getElementById('bar-elek').style.width = '85%';
-            document.getElementById('bar-gaz').style.width = '15%';
+const State = {
+    currentView: 'dashboard',
+    liveTemp: 11,
+    liveHumidity: 75,
+    liveUsdRate: 38,
+    selectedCaveId: null,
+    reportPeriod: 90,
+    maps: {},
+    routings: {},
+    charts: {}
+};
 
-            // Formül detayları
-            document.getElementById('r-ref').innerText = sonuc.referansKwh;
-            document.getElementById('r-katsayi').innerText = sonuc.sicaklikKatsayi;
-        }
+// ================================================================
+// İKON BAŞLAT
+// ================================================================
+function refreshIcons() { lucide.createIcons(); }
 
-        // ========================
-        // 3. SENARYO SEÇİMİ
-        // ========================
-        function setSenaryo(senaryo) {
-            aktifSenaryo = senaryo;
+// ================================================================
+// NAVİGASYON
+// ================================================================
+const VIEW_TITLES = {
+    dashboard: 'Operasyonel Genel Bakış',
+    caves:     'Kapadokya Mağara Ağı',
+    logistics: 'Lojistik Karbon Planlayıcı',
+    credits:   'Karbon Kredisi Marketplace',
+    reports:   'Geçmiş Veri Raporları'
+};
 
-            // Tüm kartları sıfırla
-            ['yaz', 'kis', 'yagmurlu', 'canli'].forEach(s => {
-                const el = document.getElementById('s-' + s);
-                el.classList.remove('active', 'border-green-400', 'bg-green-50');
-                el.classList.add('border-slate-200');
-            });
+function switchView(view) {
+    State.currentView = view;
+    document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    document.querySelectorAll('.sidebar-link').forEach(el => {
+        el.classList.remove('sidebar-active');
+        el.classList.add('text-slate-400');
+    });
+    const activeLink = document.querySelector(`[data-view="${view}"]`);
+    if (activeLink) {
+        activeLink.classList.add('sidebar-active');
+        activeLink.classList.remove('text-slate-400');
+    }
+    document.getElementById('page-title').innerText = VIEW_TITLES[view];
+    setTimeout(() => {
+        Object.values(State.maps).forEach(m => m && m.invalidateSize());
+    }, 100);
+    if (view === 'caves')     renderCaves();
+    if (view === 'logistics') initLogisticsMap();
+    if (view === 'credits')   renderCredits();
+    if (view === 'reports')   loadReports();
+    refreshIcons();
+}
 
-            // Aktif kartı vurgula
-            const aktifEl = document.getElementById('s-' + senaryo);
-            aktifEl.classList.add('active', 'border-green-400', 'bg-green-50');
-            aktifEl.classList.remove('border-slate-200');
+document.querySelectorAll('.sidebar-link').forEach(el => {
+    el.addEventListener('click', e => {
+        e.preventDefault();
+        switchView(el.dataset.view);
+    });
+});
 
-            // Hava durumu badge güncelle
-            const badge = document.getElementById('hava-durumu-badge');
-            const label = document.getElementById('hava-label');
-            badge.className = 'flex items-center space-x-2 px-3 py-1 rounded-full border text-sm font-semibold';
+// ================================================================
+// KARBON HESAPLAMA (m³ tabanlı, ISO 14064)
+// ================================================================
+function calculateSavings(volume_m3, storageType, externalTemp, humidity) {
+    const ref = REFERENCE_STORAGE[storageType];
+    // Sıcaklık düzeltmesi: dış sıcaklık ile hedef arası fark, %1.2/°C
+    const tempDiff = externalTemp - ref.ideal_temp;
+    const tempCoeff = Math.max(1 + (0.012 * (tempDiff - 10)), 0.7);
+    const humidityCoeff = humidity > 80 ? 1.06 : 1.0;
+    const adjustedRefKwh = ref.kwh_m3 * tempCoeff * humidityCoeff;
+    const netKwhPerM3 = Math.max(adjustedRefKwh - CAVE_OPERATIONAL_KWH_M3, 0);
+    const totalSavedKwh = netKwhPerM3 * volume_m3;
+    const savedKgCO2 = totalSavedKwh * EMISSION_FACTOR;
+    const savedTon = savedKgCO2 / 1000;
+    return {
+        adjustedRefKwh: adjustedRefKwh.toFixed(1),
+        tempCoeff: tempCoeff.toFixed(3),
+        humidityCoeff,
+        netKwhPerM3: netKwhPerM3.toFixed(1),
+        savedTon,
+        savedTonStr: savedTon.toFixed(2),
+        revVerra: (savedTon * 10).toFixed(2),
+        revGold:  (savedTon * 30).toFixed(2),
+        electricTon: (savedTon * 0.85).toFixed(2),
+        gasTon:      (savedTon * 0.15).toFixed(2)
+    };
+}
 
-            if (senaryo === 'yaz') {
-                badge.classList.add('weather-hot');
-                label.innerText = 'Yaz Senaryosu — 35°C';
-            } else if (senaryo === 'kis') {
-                badge.classList.add('weather-cold');
-                label.innerText = 'Kış Senaryosu — 0°C';
-            } else if (senaryo === 'yagmurlu') {
-                badge.classList.add('weather-rainy');
-                label.innerText = 'Yağmurlu — %95 Nem';
-            } else {
-                badge.classList.add('weather-normal');
-                label.innerText = 'Canlı Veri — ' + anlikSicaklik + '°C';
-            }
+// ================================================================
+// HESAPLAYICI ARAYÜZÜ
+// ================================================================
+function onHacimChange(input) {
+    document.getElementById('hacim-goster').innerText = parseInt(input.value).toLocaleString('tr-TR') + ' m³';
+    input.style.setProperty('--val', ((input.value - input.min) / (input.max - input.min) * 100) + '%');
+    hesaplaVeGoster();
+}
 
-            hesaplaVeGoster();
-        }
+function hesaplaVeGoster() {
+    const hacim = parseFloat(document.getElementById('input-hacim').value);
+    const depo = document.getElementById('input-depo').value;
+    const urun = document.getElementById('input-urun').value;
+    const sonuc = calculateSavings(hacim, depo, State.liveTemp, State.liveHumidity);
+    document.getElementById('s-ton').innerText = sonuc.savedTonStr + ' Ton CO₂e';
+    document.getElementById('s-verra').innerText = '$' + parseFloat(sonuc.revVerra).toLocaleString('en-US');
+    document.getElementById('s-gold').innerText = '$' + parseFloat(sonuc.revGold).toLocaleString('en-US');
+    document.getElementById('s-verra-tl').innerText = '≈ ₺' + (parseFloat(sonuc.revVerra) * State.liveUsdRate).toLocaleString('tr-TR', {maximumFractionDigits: 0});
+    document.getElementById('s-gold-tl').innerText  = '≈ ₺' + (parseFloat(sonuc.revGold)  * State.liveUsdRate).toLocaleString('tr-TR', {maximumFractionDigits: 0});
+    document.getElementById('elek-ton').innerText = sonuc.electricTon + ' Ton';
+    document.getElementById('gaz-ton').innerText  = sonuc.gasTon + ' Ton';
+    document.getElementById('r-ref').innerText = sonuc.adjustedRefKwh;
+    document.getElementById('r-ref-display').innerText = sonuc.adjustedRefKwh;
+    document.getElementById('r-katsayi').innerText = sonuc.tempCoeff;
+    const product = PRODUCT_INFO[urun];
+    const uyEl = document.getElementById('urun-uygunluk');
+    if (product.caveCompat) {
+        uyEl.innerHTML = `<span class="text-green-600">✅ ${product.name} (ideal: ${product.idealTemp}) — Mağaranın 11°C'si bu ürüne uygundur.</span>`;
+    } else {
+        uyEl.innerHTML = `<span class="text-red-600">⚠️ ${product.name} (ideal: ${product.idealTemp}) — Mağara bu sıcaklığa düşemez. Yapay derin dondurucu önerilir.</span>`;
+    }
+    updateNetAfterLogistics(sonuc.savedTon);
+}
 
-        // ========================
-        // 4. OPEN-METEO API (CANLI HAVA)
-        // ========================
-        async function initWeather() {
-            try {
-                const res = await fetch(
-                    "https://api.open-meteo.com/v1/forecast" +
-                    "?latitude=38.62&longitude=34.72" +
-                    "&current=temperature_2m,relative_humidity_2m" +
-                    "&timezone=Europe/Istanbul"
-                );
-                const data = await res.json();
-                anlikSicaklik = data.current.temperature_2m;
-                anlikNem = data.current.relative_humidity_2m;
+function updateNetAfterLogistics(savedTon) {
+    const distEl = document.getElementById('route-distance');
+    if (!distEl || !distEl.innerText.includes('km')) return;
+    const km = parseFloat(distEl.innerText);
+    if (isNaN(km)) return;
+    const logisticTon = (km * 25 * 0.100) / 1000;
+    const net = Math.max(savedTon - logisticTon, 0);
+    document.getElementById('net-after-logistics').innerText = net.toFixed(2) + ' Ton';
+}
 
-                document.getElementById('live-sicaklik').innerText = anlikSicaklik + '°C';
-                document.getElementById('live-nem').innerText = anlikNem + '%';
-                document.getElementById('sidebar-temp').innerText = anlikSicaklik + '°C';
-                document.getElementById('sidebar-nem').innerText = 'Nem: ' + anlikNem + '%';
-                document.getElementById('sidebar-durum').innerText = 'Open-Meteo · Canlı';
-                document.getElementById('hava-label').innerText = 'Canlı Veri — ' + anlikSicaklik + '°C';
-
-                hesaplaVeGoster();
-            } catch(e) {
-                // API başarısızsa simülasyon değerleri
-                document.getElementById('live-sicaklik').innerText = '11°C (simüle)';
-                document.getElementById('live-nem').innerText = '75% (simüle)';
-                document.getElementById('sidebar-temp').innerText = '11°C';
-                document.getElementById('sidebar-nem').innerText = 'Nem: 75%';
-                hesaplaVeGoster();
-            }
-        }
-
-        // ========================
-        // 5. CANLI DÖVİZ KURU
-        // ========================
-        async function fetchLiveExchangeRate() {
-            try {
-                const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-                const data = await response.json();
-                liveUsdRate = data.rates.TRY;
-
-                document.getElementById('usd-rate').innerText = liveUsdRate.toFixed(2) + ' ₺';
-                document.getElementById('usd-rate').classList.remove('animate-pulse');
-                document.querySelectorAll('.current-usd').forEach(el => el.innerText = liveUsdRate.toFixed(2));
-
-                // Portföy değeri (142.5 ton × $25 × kur)
-                const valueTL = 142.5 * 25 * liveUsdRate;
-                document.getElementById('portfolio-value').innerText = '₺ ' + valueTL.toLocaleString('tr-TR', {maximumFractionDigits: 0});
-
-                // Tablo güncelle
-                document.getElementById('tablo-kazanc-001').innerText = '₺ ' + (15.7 * 10 * liveUsdRate).toLocaleString('tr-TR', {maximumFractionDigits: 0});
-
-                hesaplaVeGoster();
-            } catch (error) {
-                document.getElementById('usd-rate').innerText = '38.00 ₺';
-            }
-        }
-
-        // ========================
-        // 6. HARİTA
-        // ========================
-        const map = L.map('map').setView([38.25, 33.70], 8);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        L.Routing.control({
-            waypoints: [
-                L.latLng(37.8746, 32.4931),
-                L.latLng(38.630, 34.912)
-            ],
-            routeWhileDragging: false,
-            addWaypoints: false,
-            show: false,
-            lineOptions: {
-                styles: [{ color: '#22c55e', opacity: 0.85, weight: 5 }]
-            }
-        }).on('routesfound', function(e) {
-            const distanceKm = (e.routes[0].summary.totalDistance / 1000).toFixed(1);
-            document.getElementById('route-distance').innerText = distanceKm + ' km';
-            const emisyonKg = distanceKm * 25 * 0.100;
-            document.getElementById('logistic-carbon').innerText = emisyonKg.toFixed(2) + ' kg CO₂';
-        }).addTo(map);
-
-        // ========================
-        // 7. SAAT
-        // ========================
-        function updateTime() {
-            document.getElementById('last-update').innerText = new Date().toLocaleTimeString('tr-TR');
-        }
-        setInterval(updateTime, 1000);
-        updateTime();
-
-        // ========================
-        // 8. GRAFİK
-        // ========================
-        new Chart(document.getElementById('carbonChart').getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Elektrik Tasarrufu', 'Gaz Kaçağı Önleme'],
-                datasets: [{
-                    data: [85, 15],
-                    backgroundColor: ['#22c55e', '#3b82f6'],
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                cutout: '70%',
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-
-        // ========================
-        // BAŞLAT
-        // ========================
-        initWeather();
-        fetchLiveExchangeRate();
+// ================================================================
+// HAVA DURUMU - CANLI
+// ================================================================
+async function initWeather() {
+    try {
+        const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=38.62&longitude=34.72&current=temperature_2m,relative_humidity_2m&timezone=Europe/Istanbul");
+        const data = await res.json();
+        State.liveTemp = data.current.temperature_2m;
+        State.liveHumidity = data.current.relative_humidity_2m;
+        document.getElementById('live-sicaklik').innerText = State.liveTemp + '°C';
+        document.getElementById('live-nem').innerText = State.liveHumidity + '%';
+        document.getElementById('sidebar-temp').innerText = State.liveTemp + '°C';
+        document.getElementById('sidebar-nem').innerText = 'Nem: ' + State.liveHumidity + '%';
+        document.getElementById('sidebar-durum').innerText = 'Open-Meteo · Canlı';
+        document.getElementById('hava-label').innerText = `Canlı: ${State.liveTemp}°C / %${State.liveHumidity} nem`;
         hesaplaVeGoster();
-    </script>
+    } catch(e) {
+        document.getElementById('live-sicaklik').innerText = '11°C';
+        document.getElementById('live-nem').innerText = '75%';
+        document.getElementById('hava-label').innerText = 'Simüle veri (API hatası)';
+    }
+}
+
+// ================================================================
+// DÖVİZ KURU
+// ================================================================
+async function fetchLiveExchangeRate() {
+    try {
+        const r = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        const d = await r.json();
+        State.liveUsdRate = d.rates.TRY;
+        document.getElementById('usd-rate').innerText = State.liveUsdRate.toFixed(2) + ' ₺';
+        document.getElementById('usd-rate').classList.remove('animate-pulse');
+        document.querySelectorAll('.current-usd').forEach(el => el.innerText = State.liveUsdRate.toFixed(2));
+        const totalTons = CAVES.reduce((sum, c) => sum + (c.monthlyTons * 12), 0);
+        const portfolioUSD = totalTons * 25;
+        document.getElementById('kpi-portfolio').innerText = '₺ ' + (portfolioUSD * State.liveUsdRate).toLocaleString('tr-TR', {maximumFractionDigits: 0});
+        document.getElementById('kpi-total-savings').innerText = totalTons.toFixed(1) + ' Ton';
+        const totalVol = CAVES.reduce((s, c) => s + c.volume, 0);
+        document.getElementById('kpi-volume').innerText = totalVol.toLocaleString('tr-TR') + ' m³';
+        renderDashboardCaveTable();
+        hesaplaVeGoster();
+    } catch (error) {
+        document.getElementById('usd-rate').innerText = '38.00 ₺';
+    }
+}
+
+// ================================================================
+// DASHBOARD MAĞARA TABLOSU
+// ================================================================
+function renderDashboardCaveTable() {
+    const tbody = document.getElementById('dashboard-cave-table');
+    tbody.innerHTML = CAVES.slice(0, 5).map(cave => {
+        const annualTons = cave.monthlyTons * 12;
+        const monthlyRev = cave.monthlyTons * 10 * State.liveUsdRate;
+        const certClass = cave.cert === 'Verra VCS' ? 'bg-emerald-100 text-emerald-700' :
+                         cave.cert === 'Gold Standard' ? 'bg-blue-100 text-blue-700' :
+                         'bg-yellow-100 text-yellow-700';
+        return `<tr class="hover:bg-slate-50 cursor-pointer" onclick="openCaveDetail('${cave.id}')">
+            <td class="px-6 py-4 font-semibold font-mono-custom text-green-700">#${cave.id}</td>
+            <td class="px-6 py-4 text-slate-500">${cave.location}</td>
+            <td class="px-6 py-4 font-mono-custom">${cave.volume.toLocaleString('tr-TR')} m³</td>
+            <td class="px-6 py-4">${cave.productEmoji} ${PRODUCT_INFO[cave.productType].name}</td>
+            <td class="px-6 py-4 font-semibold">${annualTons.toFixed(1)} Ton</td>
+            <td class="px-6 py-4 font-bold text-green-600">₺ ${monthlyRev.toLocaleString('tr-TR', {maximumFractionDigits: 0})}</td>
+            <td class="px-6 py-4"><span class="px-2 py-1 ${certClass} text-xs rounded-md font-semibold">${cave.cert}</span></td>
+            <td class="px-6 py-4"><span class="px-2 py-1 ${cave.status==='active'?'status-active':'status-pending'} text-xs rounded-md">${cave.status==='active'?'Aktif':'Beklemede'}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+// ================================================================
+// MAĞARA AĞLARI
+// ================================================================
+function renderCaves() {
+    const grid = document.getElementById('caves-grid-view');
+    grid.innerHTML = CAVES.map(cave => {
+        const annualTons = cave.monthlyTons * 12;
+        const monthlyRev = cave.monthlyTons * 10 * State.liveUsdRate;
+        const statusBadge = cave.status === 'active'
+            ? '<span class="px-2 py-1 status-active text-xs rounded-md font-semibold">● Aktif</span>'
+            : '<span class="px-2 py-1 status-pending text-xs rounded-md font-semibold">⏱ Beklemede</span>';
+        return `<div class="cave-card bg-white p-5 rounded-2xl shadow-sm border border-slate-100" onclick="openCaveDetail('${cave.id}')">
+            <div class="flex justify-between items-start mb-3">
+                <div class="text-3xl">${cave.productEmoji}</div>
+                ${statusBadge}
+            </div>
+            <h3 class="text-base font-bold text-slate-800">${cave.name}</h3>
+            <p class="text-xs text-slate-500 mt-1 flex items-center"><i data-lucide="map-pin" class="w-3 h-3 mr-1"></i> ${cave.location}</p>
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="p-2 bg-slate-50 rounded-lg">
+                    <p class="text-xs text-slate-400">Hacim</p>
+                    <p class="text-sm font-bold text-slate-700 font-mono-custom">${cave.volume.toLocaleString('tr-TR')} m³</p>
+                </div>
+                <div class="p-2 bg-green-50 rounded-lg">
+                    <p class="text-xs text-green-500">Yıllık CO₂</p>
+                    <p class="text-sm font-bold text-green-700 font-mono-custom">${annualTons.toFixed(1)} Ton</p>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
+                <div>
+                    <p class="text-xs text-slate-400">Sahibi</p>
+                    <p class="text-xs font-semibold text-slate-700">${cave.owner}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-slate-400">Aylık</p>
+                    <p class="text-sm font-bold text-emerald-600">₺${monthlyRev.toLocaleString('tr-TR', {maximumFractionDigits: 0})}</p>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+    document.getElementById('caves-active-count').innerText = CAVES.filter(c => c.status === 'active').length;
+    document.getElementById('caves-pending-count').innerText = CAVES.filter(c => c.status === 'pending').length;
+    document.getElementById('caves-total-volume').innerText = CAVES.reduce((s, c) => s + c.volume, 0).toLocaleString('tr-TR') + ' m³';
+    document.getElementById('caves-total-carbon').innerText = (CAVES.reduce((s, c) => s + c.monthlyTons * 12, 0)).toFixed(1) + ' t';
+    refreshIcons();
+}
+
+function setCaveView(mode) {
+    document.getElementById('tab-grid').classList.toggle('active', mode === 'grid');
+    document.getElementById('tab-map').classList.toggle('active', mode === 'map');
+    document.getElementById('caves-grid-view').classList.toggle('hidden', mode !== 'grid');
+    document.getElementById('caves-map-view').classList.toggle('hidden', mode !== 'map');
+    if (mode === 'map' && !State.maps.caves) {
+        initCavesMap();
+    } else if (mode === 'map') {
+        setTimeout(() => State.maps.caves.invalidateSize(), 100);
+    }
+}
+
+function initCavesMap() {
+    const map = L.map('map-caves').setView([38.55, 34.7], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    CAVES.forEach(cave => {
+        const color = cave.status === 'active' ? '#22c55e' : '#f59e0b';
+        const marker = L.circleMarker(cave.coords, {
+            radius: 8 + Math.sqrt(cave.volume) / 12,
+            fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.85
+        }).addTo(map);
+        marker.bindPopup(`<strong>${cave.productEmoji} ${cave.name}</strong><br>
+            ${cave.location}<br>
+            Hacim: <b>${cave.volume.toLocaleString('tr-TR')} m³</b><br>
+            Yıllık: <b>${(cave.monthlyTons*12).toFixed(1)} Ton CO₂</b><br>
+            <a onclick="openCaveDetail('${cave.id}')" style="color:#22c55e;cursor:pointer;text-decoration:underline">Detayları Gör →</a>`);
+    });
+    State.maps.caves = map;
+}
+
+function openCaveDetail(caveId) {
+    const cave = CAVES.find(c => c.id === caveId);
+    if (!cave) return;
+    State.selectedCaveId = caveId;
+    const annualTons = cave.monthlyTons * 12;
+    const monthlyRevTL = cave.monthlyTons * 10 * State.liveUsdRate;
+    const annualRevTL = monthlyRevTL * 12;
+    const product = PRODUCT_INFO[cave.productType];
+    const html = `
+    <div class="bg-gradient-to-br from-green-600 to-emerald-700 p-6 rounded-t-2xl text-white">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-xs text-green-200 font-mono-custom">#${cave.id}</p>
+                <h3 class="text-xl font-bold mt-1">${cave.productEmoji} ${cave.name}</h3>
+                <p class="text-sm text-green-100 mt-1 flex items-center"><i data-lucide="map-pin" class="w-3 h-3 mr-1"></i> ${cave.location}</p>
+            </div>
+            <button onclick="closeModal('cave-modal')" class="text-white hover:bg-white/20 p-2 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-3">
+            <div class="bg-white/10 rounded-lg p-3 text-center">
+                <p class="text-xs text-green-200">Hacim</p>
+                <p class="text-lg font-bold font-mono-custom">${cave.volume.toLocaleString('tr-TR')} m³</p>
+            </div>
+            <div class="bg-white/10 rounded-lg p-3 text-center">
+                <p class="text-xs text-green-200">Yıllık CO₂</p>
+                <p class="text-lg font-bold font-mono-custom">${annualTons.toFixed(1)} t</p>
+            </div>
+            <div class="bg-white/10 rounded-lg p-3 text-center">
+                <p class="text-xs text-green-200">Yıllık Gelir</p>
+                <p class="text-lg font-bold font-mono-custom">₺${(annualRevTL/1000).toFixed(0)}K</p>
+            </div>
+        </div>
+    </div>
+    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center"><i data-lucide="user" class="w-4 h-4 mr-2 text-green-500"></i> Sahip Bilgileri</h4>
+            <div class="space-y-2 text-sm">
+                <p><span class="text-slate-400">İsim:</span> <strong class="text-slate-700">${cave.owner}</strong></p>
+                <p><span class="text-slate-400">Telefon:</span> <span class="font-mono-custom text-slate-600">${cave.ownerPhone}</span></p>
+                <p><span class="text-slate-400">Sözleşme:</span> ${cave.established}</p>
+            </div>
+            <h4 class="text-sm font-bold text-slate-700 mt-5 mb-3 flex items-center"><i data-lucide="package" class="w-4 h-4 mr-2 text-green-500"></i> Depolama Detayı</h4>
+            <div class="space-y-2 text-sm">
+                <p><span class="text-slate-400">Ürün:</span> ${cave.productEmoji} <strong>${product.name}</strong></p>
+                <p><span class="text-slate-400">İdeal Sıcaklık:</span> ${product.idealTemp}</p>
+                <p><span class="text-slate-400">Mağara İçi:</span> <span class="text-green-600 font-bold">~11°C ✅</span></p>
+            </div>
+        </div>
+        <div>
+            <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center"><i data-lucide="award" class="w-4 h-4 mr-2 text-green-500"></i> Sertifikasyon</h4>
+            <div class="p-3 bg-${cave.cert === 'Verra VCS' ? 'emerald' : cave.cert === 'Gold Standard' ? 'blue' : 'yellow'}-50 rounded-lg">
+                <p class="text-sm font-bold text-${cave.cert === 'Verra VCS' ? 'emerald' : cave.cert === 'Gold Standard' ? 'blue' : 'yellow'}-700">${cave.cert}</p>
+                <p class="text-xs text-slate-600 mt-1">${cave.cert === 'Verra VCS' ? 'Aktif · ICAO CORSIA uyumlu' : cave.cert === 'Gold Standard' ? 'WWF Onaylı' : 'Doğrulama sürecinde'}</p>
+            </div>
+            <h4 class="text-sm font-bold text-slate-700 mt-5 mb-3 flex items-center"><i data-lucide="trending-up" class="w-4 h-4 mr-2 text-green-500"></i> Gelir Dağılımı (Aylık)</h4>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between"><span class="text-slate-500">Karbon Kredisi</span><strong>₺${(monthlyRevTL*0.55).toLocaleString('tr-TR',{maximumFractionDigits:0})}</strong></div>
+                <div class="flex justify-between"><span class="text-slate-500">Kira</span><strong>₺${(monthlyRevTL*0.30).toLocaleString('tr-TR',{maximumFractionDigits:0})}</strong></div>
+                <div class="flex justify-between"><span class="text-slate-500">Lojistik Komisyonu</span><strong>₺${(monthlyRevTL*0.15).toLocaleString('tr-TR',{maximumFractionDigits:0})}</strong></div>
+                <div class="flex justify-between border-t border-slate-200 pt-2 mt-2"><strong class="text-slate-700">TOPLAM</strong><strong class="text-green-600">₺${monthlyRevTL.toLocaleString('tr-TR',{maximumFractionDigits:0})}</strong></div>
+            </div>
+        </div>
+        <div class="md:col-span-2">
+            <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center"><i data-lucide="activity" class="w-4 h-4 mr-2 text-green-500"></i> Anlık Sensör Verisi (Mock IoT)</h4>
+            <div class="grid grid-cols-4 gap-2">
+                <div class="p-3 bg-slate-50 rounded-lg text-center">
+                    <p class="text-xs text-slate-500">İç Sıcaklık</p>
+                    <p class="text-lg font-bold text-green-600 font-mono-custom">${(11 + (Math.random() - 0.5)).toFixed(1)}°C</p>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg text-center">
+                    <p class="text-xs text-slate-500">Nem</p>
+                    <p class="text-lg font-bold text-blue-600 font-mono-custom">${(70 + Math.random()*10).toFixed(0)}%</p>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg text-center">
+                    <p class="text-xs text-slate-500">CO₂ İç</p>
+                    <p class="text-lg font-bold text-orange-600 font-mono-custom">${(420 + Math.random()*80).toFixed(0)} ppm</p>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-lg text-center">
+                    <p class="text-xs text-slate-500">Doluluk</p>
+                    <p class="text-lg font-bold text-purple-600 font-mono-custom">${(60 + Math.random()*30).toFixed(0)}%</p>
+                </div>
+            </div>
+        </div>
+        <div class="md:col-span-2 flex space-x-2">
+            <button class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl flex items-center justify-center"><i data-lucide="file-text" class="w-4 h-4 mr-2"></i> Detaylı Rapor</button>
+            <button class="flex-1 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold py-3 rounded-xl flex items-center justify-center"><i data-lucide="message-circle" class="w-4 h-4 mr-2"></i> Sahip ile İletişim</button>
+        </div>
+    </div>`;
+    document.getElementById('cave-modal-content').innerHTML = html;
+    document.getElementById('cave-modal').classList.add('show');
+    refreshIcons();
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+}
+
+function openProfile() {
+    document.getElementById('profile-modal').classList.add('show');
+    refreshIcons();
+}
+
+// ================================================================
+// LOJİSTİK PLANER
+// ================================================================
+function initLogisticsMap() {
+    if (State.maps.logistics) {
+        setTimeout(() => State.maps.logistics.invalidateSize(), 100);
+        planLogistics();
+        return;
+    }
+    const map = L.map('map-logistics').setView([38.5, 33.5], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    CAVES.filter(c => c.status === 'active').forEach(cave => {
+        L.circleMarker(cave.coords, {
+            radius: 6, fillColor: '#22c55e', color: '#fff', weight: 2, fillOpacity: 0.7
+        }).addTo(map).bindPopup(`<strong>${cave.name}</strong><br>${cave.volume} m³`);
+    });
+    State.maps.logistics = map;
+    planLogistics();
+}
+
+function planLogistics() {
+    const origin = document.getElementById('logistics-origin').value;
+    const load = parseFloat(document.getElementById('logistics-load').value) || 25;
+    const product = document.getElementById('logistics-product').value;
+    const originCoords = ORIGIN_CITIES[origin].coords;
+    // Ürün uyumlu, aktif, yeterli kapasiteli mağaralardan en yakını seç
+    const compatible = CAVES.filter(c => c.status === 'active' && PRODUCT_INFO[c.productType].caveCompat);
+    let best = null;
+    let bestDist = Infinity;
+    compatible.forEach(c => {
+        const dist = haversine(originCoords[0], originCoords[1], c.coords[0], c.coords[1]);
+        const productMatch = c.productType === product ? 0 : 30;
+        const score = dist + productMatch;
+        if (score < bestDist) { bestDist = score; best = c; }
+    });
+    if (!best) return;
+    const distKm = haversine(originCoords[0], originCoords[1], best.coords[0], best.coords[1]) * 1.3;
+    const logisticCO2 = distKm * load * 0.100;
+    const productMatch = best.productType === product;
+    const reasonText = productMatch
+        ? `🎯 ${best.location} · Ürün eşleşmesi (${best.productEmoji}) ve en kısa mesafe`
+        : `📍 ${best.location} · Bu ürün için mağaralar arasında en yakını`;
+    document.getElementById('suggested-cave-name').innerText = best.name;
+    document.getElementById('suggested-cave-reason').innerText = reasonText;
+    document.getElementById('logistics-distance').innerText = distKm.toFixed(0) + ' km';
+    document.getElementById('logistics-co2').innerText = logisticCO2.toFixed(1) + ' kg';
+    // Net tasarruf: depolama tasarrufu (yıllık varsayım) - lojistik
+    const sonuc = calculateSavings(load * 4, PRODUCT_INFO[product].storageType, State.liveTemp, State.liveHumidity);
+    const netTon = Math.max(sonuc.savedTon - logisticCO2/1000, 0);
+    document.getElementById('logistics-net').innerText = netTon.toFixed(2) + ' Ton';
+    const netUSD = (netTon * 10).toFixed(2);
+    document.getElementById('logistics-revenue').innerText = `Verra'da: $${netUSD} · ₺${(parseFloat(netUSD) * State.liveUsdRate).toLocaleString('tr-TR',{maximumFractionDigits:0})}`;
+    if (State.routings.logistics) State.maps.logistics.removeControl(State.routings.logistics);
+    State.routings.logistics = L.Routing.control({
+        waypoints: [L.latLng(originCoords[0], originCoords[1]), L.latLng(best.coords[0], best.coords[1])],
+        routeWhileDragging: false, addWaypoints: false, show: false,
+        lineOptions: { styles: [{ color: '#22c55e', opacity: 0.85, weight: 5 }] },
+        createMarker: () => null
+    }).addTo(State.maps.logistics);
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function signContract() {
+    const hash = '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
+    const block = Math.floor(18000000 + Math.random() * 100000);
+    document.getElementById('contract-hash').innerText = hash;
+    document.getElementById('contract-block').innerText = block.toLocaleString('en-US');
+    document.getElementById('contract-modal').classList.add('show');
+    refreshIcons();
+}
+
+// ================================================================
+// KARBON KREDİLERİ
+// ================================================================
+const CREDITS = [
+    { id: 'CR-2026-001', cave: 'ANT-001', tons: 21.6, cert: 'Verra VCS', status: 'sold', buyer: 'Turkish Airlines', hash: '0x4a7f...8c2e' },
+    { id: 'CR-2026-002', cave: 'ANT-002', tons: 10.8, cert: 'Gold Standard', status: 'listed', buyer: '-', hash: '0x9b3d...1a4f' },
+    { id: 'CR-2026-003', cave: 'ANT-004', tons: 25.2, cert: 'Verra VCS', status: 'sold', buyer: 'Lufthansa', hash: '0x2e5c...7f9a' },
+    { id: 'CR-2026-004', cave: 'ANT-005', tons: 16.8, cert: 'Gold Standard', status: 'retired', buyer: 'Microsoft', hash: '0x8f1a...3d6b' },
+    { id: 'CR-2026-005', cave: 'ANT-007', tons: 42.0, cert: 'Verra VCS', status: 'sold', buyer: 'Pegasus', hash: '0x5c8d...e2b7' },
+    { id: 'CR-2026-006', cave: 'ANT-008', tons: 13.2, cert: 'Gold Standard', status: 'listed', buyer: '-', hash: '0x1f4e...9c5a' }
+];
+
+const BUYERS = [
+    { name: 'Turkish Airlines',  logo: '✈️', volume: 67.2, status: 'active' },
+    { name: 'Lufthansa Group',   logo: '🛫', volume: 25.2, status: 'active' },
+    { name: 'Pegasus Hava',     logo: '🛩️', volume: 42.0, status: 'active' },
+    { name: 'Microsoft (ESG)',   logo: '💻', volume: 16.8, status: 'completed' }
+];
+
+const TRANSACTIONS = [
+    { time: '2 saat önce', type: 'sold', desc: 'Turkish Airlines, ANT-001\'den 21.6 ton kredi satın aldı', amount: '$216', hash: '0x4a7f...8c2e' },
+    { time: '5 saat önce', type: 'issued', desc: 'ANT-007 için 42 ton yeni Verra VCS kredisi oluşturuldu', amount: '+42 t', hash: '0x5c8d...e2b7' },
+    { time: 'Dün', type: 'retired', desc: 'Microsoft, 16.8 ton Gold Standard krediyi emekliye ayırdı', amount: '$504', hash: '0x8f1a...3d6b' },
+    { time: 'Dün', type: 'sold', desc: 'Lufthansa, ANT-004\'ten 25.2 ton kredi satın aldı', amount: '$252', hash: '0x2e5c...7f9a' },
+    { time: '3 gün önce', type: 'listed', desc: 'ANT-002 için 10.8 ton Gold Standard kredisi listelendi', amount: '$324', hash: '0x9b3d...1a4f' }
+];
+
+function renderCredits() {
+    document.getElementById('credits-table').innerHTML = CREDITS.map(c => {
+        const cave = CAVES.find(x => x.id === c.cave);
+        const statusBadge = {
+            sold:    `<span class="px-2 py-1 status-sold text-xs rounded-md font-semibold">Satıldı (${c.buyer})</span>`,
+            listed:  `<span class="px-2 py-1 status-listed text-xs rounded-md font-semibold">Listede</span>`,
+            retired: `<span class="px-2 py-1 status-retired text-xs rounded-md font-semibold">Emekli</span>`
+        }[c.status];
+        return `<tr class="hover:bg-slate-50">
+            <td class="px-3 py-3 font-mono-custom text-green-700 font-semibold">${c.id}</td>
+            <td class="px-3 py-3"><span class="font-mono-custom text-xs text-slate-500">${c.cave}</span><br><span class="text-xs">${cave ? cave.location : '-'}</span></td>
+            <td class="px-3 py-3 font-bold">${c.tons} t</td>
+            <td class="px-3 py-3"><span class="text-xs ${c.cert==='Verra VCS'?'text-emerald-600':'text-blue-600'} font-semibold">${c.cert}</span></td>
+            <td class="px-3 py-3">${statusBadge}</td>
+            <td class="px-3 py-3 font-mono-custom text-xs text-slate-400">${c.hash}</td>
+        </tr>`;
+    }).join('');
+    document.getElementById('buyers-list').innerHTML = BUYERS.map(b => `
+        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">${b.logo}</span>
+                <div>
+                    <p class="text-sm font-semibold text-slate-700">${b.name}</p>
+                    <p class="text-xs text-slate-400">${b.volume} ton ${b.status === 'active' ? 'aktif' : 'tamamlandı'}</p>
+                </div>
+            </div>
+            <span class="w-2 h-2 ${b.status==='active'?'bg-green-500 animate-pulse':'bg-slate-300'} rounded-full"></span>
+        </div>
+    `).join('');
+    document.getElementById('transactions-list').innerHTML = TRANSACTIONS.map(t => {
+        const iconColor = { sold: 'text-purple-500', issued: 'text-green-500', retired: 'text-slate-500', listed: 'text-blue-500' }[t.type];
+        const iconName = { sold: 'arrow-right-circle', issued: 'plus-circle', retired: 'archive', listed: 'list' }[t.type];
+        return `<div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition">
+            <div class="flex items-center space-x-3">
+                <i data-lucide="${iconName}" class="w-5 h-5 ${iconColor}"></i>
+                <div>
+                    <p class="text-sm text-slate-700">${t.desc}</p>
+                    <p class="text-xs text-slate-400 mt-1"><span class="font-mono-custom">${t.hash}</span> · ${t.time}</p>
+                </div>
+            </div>
+            <span class="text-sm font-bold text-slate-700 font-mono-custom">${t.amount}</span>
+        </div>`;
+    }).join('');
+    refreshIcons();
+}
+
+// ================================================================
+// RAPORLAR (Open-Meteo Archive API - GERÇEK GEÇMİŞ VERİ)
+// ================================================================
+function setReportPeriod(days) {
+    State.reportPeriod = days;
+    document.querySelectorAll('[data-period]').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.period) === days);
+    });
+    loadReports();
+}
+
+function formatDate(d) {
+    return d.toISOString().split('T')[0];
+}
+
+async function loadReports() {
+    document.getElementById('report-loading').classList.remove('hidden');
+    document.getElementById('report-content').classList.add('hidden');
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() - 5);
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - State.reportPeriod);
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=38.62&longitude=34.72&start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&daily=temperature_2m_mean,relative_humidity_2m_mean&timezone=Europe/Istanbul`;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const dates = data.daily.time;
+        const temps = data.daily.temperature_2m_mean;
+        const hums  = data.daily.relative_humidity_2m_mean;
+        const totalVolume = CAVES.filter(c=>c.status==='active').reduce((s,c)=>s+c.volume, 0);
+        const dailyResults = dates.map((d, i) => {
+            const t = temps[i] ?? 11;
+            const h = hums[i]  ?? 75;
+            const sonuc = calculateSavings(totalVolume, 'cold', t, h);
+            return {
+                date: d,
+                temp: t,
+                humidity: h,
+                tons: sonuc.savedTon / 365,
+                revVerra: (sonuc.savedTon / 365) * 10
+            };
+        });
+        const totalTons = dailyResults.reduce((s, r) => s + r.tons, 0);
+        const totalRevenue = dailyResults.reduce((s, r) => s + r.revVerra, 0);
+        const avgTemp = dailyResults.reduce((s, r) => s + r.temp, 0) / dailyResults.length;
+        const minTemp = Math.min(...dailyResults.map(r => r.temp));
+        const maxTemp = Math.max(...dailyResults.map(r => r.temp));
+        const bestDay = dailyResults.reduce((max, r) => r.tons > max.tons ? r : max, dailyResults[0]);
+        document.getElementById('rep-total-tons').innerText = totalTons.toFixed(1);
+        document.getElementById('rep-total-revenue').innerText = '$' + totalRevenue.toLocaleString('en-US',{maximumFractionDigits:0});
+        document.getElementById('rep-total-revenue-tl').innerText = '≈ ₺' + (totalRevenue * State.liveUsdRate).toLocaleString('tr-TR',{maximumFractionDigits:0});
+        document.getElementById('rep-avg-temp').innerText = avgTemp.toFixed(1) + '°C';
+        document.getElementById('rep-temp-range').innerText = `Min ${minTemp.toFixed(0)}°C / Max ${maxTemp.toFixed(0)}°C`;
+        document.getElementById('rep-best-day').innerText = new Date(bestDay.date).toLocaleDateString('tr-TR');
+        document.getElementById('rep-best-day-tons').innerText = bestDay.tons.toFixed(2) + ' ton tasarruf';
+        renderReportCharts(dailyResults);
+        renderReportTable(dailyResults);
+        document.getElementById('report-loading').classList.add('hidden');
+        document.getElementById('report-content').classList.remove('hidden');
+        refreshIcons();
+    } catch (e) {
+        document.getElementById('report-loading').innerHTML = `
+            <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 inline-block"></i>
+            <p class="text-sm text-red-600 mt-3">Open-Meteo Archive API'ye ulaşılamadı: ${e.message}</p>`;
+        refreshIcons();
+    }
+}
+
+function renderReportCharts(daily) {
+    if (State.charts.daily) State.charts.daily.destroy();
+    State.charts.daily = new Chart(document.getElementById('reportDailyChart'), {
+        type: 'line',
+        data: {
+            labels: daily.map(d => new Date(d.date).toLocaleDateString('tr-TR', {month:'short',day:'numeric'})),
+            datasets: [{
+                label: 'Günlük Tasarruf (Ton CO₂)',
+                data: daily.map(d => d.tons),
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34,197,94,0.15)',
+                fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { ticks: { maxTicksLimit: 12 } } }
+        }
+    });
+    if (State.charts.scatter) State.charts.scatter.destroy();
+    State.charts.scatter = new Chart(document.getElementById('reportScatterChart'), {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Tasarruf vs Sıcaklık',
+                data: daily.map(d => ({ x: d.temp, y: d.tons })),
+                backgroundColor: 'rgba(34,197,94,0.6)', pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { title: { display: true, text: 'Dış Sıcaklık (°C)' } },
+                y: { title: { display: true, text: 'Tasarruf (Ton CO₂/gün)' } }
+            }
+        }
+    });
+    const monthly = {};
+    daily.forEach(d => {
+        const m = new Date(d.date).toLocaleDateString('tr-TR', {month:'long', year:'2-digit'});
+        if (!monthly[m]) monthly[m] = { tons: 0, rev: 0 };
+        monthly[m].tons += d.tons;
+        monthly[m].rev  += d.revVerra;
+    });
+    if (State.charts.monthly) State.charts.monthly.destroy();
+    State.charts.monthly = new Chart(document.getElementById('reportMonthlyChart'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(monthly),
+            datasets: [{
+                label: 'Aylık Gelir ($)', data: Object.values(monthly).map(m=>m.rev),
+                backgroundColor: '#22c55e'
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function renderReportTable(daily) {
+    const tbody = document.getElementById('report-data-table');
+    const sample = daily.slice(-15).reverse();
+    tbody.innerHTML = sample.map(d => `<tr>
+        <td class="px-3 py-2">${new Date(d.date).toLocaleDateString('tr-TR')}</td>
+        <td class="px-3 py-2 font-mono-custom">${d.temp.toFixed(1)}°C</td>
+        <td class="px-3 py-2 font-mono-custom">${d.humidity.toFixed(0)}%</td>
+        <td class="px-3 py-2 font-mono-custom font-bold text-green-600">${d.tons.toFixed(3)}</td>
+        <td class="px-3 py-2 font-mono-custom">$${d.revVerra.toFixed(2)}</td>
+    </tr>`).join('');
+}
+
+let lastDailyData = [];
+function downloadReport() {
+    const data = lastDailyData.length ? lastDailyData : [];
+    let csv = 'Tarih,Sıcaklık,Nem,Tasarruf_Ton,Gelir_USD\n';
+    document.querySelectorAll('#report-data-table tr').forEach(tr => {
+        const cells = Array.from(tr.children).map(td => td.innerText.replace(/[°%₺$]/g,'').trim());
+        csv += cells.join(',') + '\n';
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `antrum-rapor-${State.reportPeriod}gun.csv`;
+    a.click();
+}
+
+// ================================================================
+// DASHBOARD HARİTASI
+// ================================================================
+function initDashboardMap() {
+    const map = L.map('map-dashboard').setView([38.25, 33.70], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    L.Routing.control({
+        waypoints: [L.latLng(37.8746, 32.4931), L.latLng(38.630, 34.912)],
+        routeWhileDragging: false, addWaypoints: false, show: false,
+        lineOptions: { styles: [{ color: '#22c55e', opacity: 0.85, weight: 5 }] },
+        createMarker: () => null
+    }).on('routesfound', function(e) {
+        const distanceKm = (e.routes[0].summary.totalDistance / 1000).toFixed(1);
+        document.getElementById('route-distance').innerText = distanceKm + ' km';
+        const emisyonKg = distanceKm * 25 * 0.100;
+        document.getElementById('logistic-carbon').innerText = emisyonKg.toFixed(1) + ' kg CO₂';
+        hesaplaVeGoster();
+    }).addTo(map);
+    State.maps.dashboard = map;
+}
+
+// ================================================================
+// SAAT
+// ================================================================
+function updateTime() {
+    document.getElementById('last-update').innerText = new Date().toLocaleTimeString('tr-TR');
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// ================================================================
+// DASHBOARD GRAFİĞİ
+// ================================================================
+function initCarbonChart() {
+    new Chart(document.getElementById('carbonChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Elektrik Tasarrufu', 'Soğutucu Gaz Önleme'],
+            datasets: [{
+                data: [85, 15],
+                backgroundColor: ['#22c55e', '#3b82f6'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '70%', plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+// ================================================================
+// BAŞLAT
+// ================================================================
+window.addEventListener('DOMContentLoaded', () => {
+    refreshIcons();
+    initDashboardMap();
+    initCarbonChart();
+    initWeather();
+    fetchLiveExchangeRate();
+    document.getElementById('input-hacim').style.setProperty('--val', '2%');
+    hesaplaVeGoster();
+});
+</script>
 </body>
 </html>
