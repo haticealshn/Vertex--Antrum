@@ -41,7 +41,7 @@ Sistem tamamen canlı verilerle beslenen bir organizmadır:
 ```mermaid
 graph TD
     A[Meteoroloji / Open-Meteo API] -->|Anlık / Geçmiş İklim| B(ISO 14064 Karbon Motoru)
-    C[Lojistik Mesafe / OSRM API] -->|Nakliye Emisyonu| B
+    C[Lojistik Mesafe / OSRM API] -->|Nakliye Emisyonu| B 
     B -->|Net Karbon Kredisi| D[Verra / Gold Standard]
     D --> E(Canlı Döviz API)
     E -->|Fiyatlandırma| F[Glassmorphism Dashboard]
