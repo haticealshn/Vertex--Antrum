@@ -24,7 +24,7 @@
         body {
             font-family: 'DM Sans', sans-serif;
             background: linear-gradient(rgba(248, 246, 240, 0.75), rgba(244, 241, 234, 0.85)),
-                url('https://bunny-wp-pullzone-nfqzsydbnl.b-cdn.net/wp-content/uploads/2020/02/iStock-1124656717-1024x644.jpg') no-repeat center center fixed;
+                url('https://i.hizliresim.com/jop813a.jpeg') no-repeat center center fixed;
             background-size: cover;
             color: #292524;
         }
@@ -76,12 +76,12 @@
             border: 1px solid rgba(255, 255, 255, 0.8);
         }
 
-        .map-canvas {
-            height: 380px;
-        }
-
-        .map-large {
-            height: 520px;
+        /* Responsive Harita Boyutları */
+        .map-canvas { height: 300px; }
+        .map-large { height: 400px; }
+        @media (min-width: 768px) {
+            .map-canvas { height: 380px; }
+            .map-large { height: 520px; }
         }
 
         .leaflet-routing-container {
@@ -93,17 +93,8 @@
         }
 
         @keyframes pulse-green {
-
-            0%,
-            100% {
-                opacity: 1;
-                filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
-            }
-
-            50% {
-                opacity: 0.5;
-                filter: drop-shadow(0 0 1px rgba(16, 185, 129, 0.1));
-            }
+            0%, 100% { opacity: 1; filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4)); }
+            50% { opacity: 0.5; filter: drop-shadow(0 0 1px rgba(16, 185, 129, 0.1)); }
         }
 
         .animate-pulse-green {
@@ -111,15 +102,8 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .fade-in {
@@ -210,8 +194,10 @@
         }
 
         /* DİNAMİK RANGE INPUT CSS */
+        /* DİNAMİK RANGE INPUT CSS */
         input[type=range] {
-            -webkit-appearance: none;
+            -webkit-appearance: none; /* Chrome, Safari, Yeni Edge için */
+            appearance: none;         /* Standart kullanım (SARI UYARIYI KALDIRIR) */
             height: 6px;
             border-radius: 3px;
             --active-color: #10b981;
@@ -233,6 +219,8 @@
 
         select,
         input[type="text"],
+        input[type="password"],
+        input[type="email"],
         input[type="number"] {
             background-color: rgba(255, 255, 255, 0.6) !important;
             color: #292524 !important;
@@ -250,57 +238,38 @@
             border-color: #10b981;
         }
 
-        .status-active {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-pending {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .status-listed {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .status-sold {
-            background: #f3e8ff;
-            color: #6b21a8;
-        }
-
-        .status-retired {
-            background: #f1f5f9;
-            color: #475569;
-        }
-
-        .api-ok {
-            color: #10b981;
-        }
-
-        .api-error {
-            color: #ef4444;
-        }
-
-        .api-loading {
-            color: #f59e0b;
-        }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-listed { background: #dbeafe; color: #1e40af; }
+        .status-sold { background: #f3e8ff; color: #6b21a8; }
+        .status-retired { background: #f1f5f9; color: #475569; }
+        .api-ok { color: #10b981; }
+        .api-error { color: #ef4444; }
+        .api-loading { color: #f59e0b; }
     </style>
 </head>
 
 <body class="flex h-screen overflow-hidden">
+    
+    <!-- Mobil Menü Backdrop -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-stone-900/50 backdrop-blur-sm z-[90] hidden transition-opacity duration-300 opacity-0 md:hidden"></div>
+
     <!-- ============ SIDEBAR ============ -->
-    <aside class="w-64 glass-sidebar flex-shrink-0 hidden md:flex flex-col z-20">
-        <div class="p-6 flex items-center space-x-3 border-b border-white/40">
-            <div
-                class="w-10 h-10 bg-emerald-600/90 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-md border border-emerald-500/30">
-                <i data-lucide="mountain" class="text-white w-5 h-5"></i>
+    <aside id="sidebar" class="w-64 glass-sidebar flex-shrink-0 flex flex-col z-[100] fixed inset-y-0 left-0 transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex">
+        <div class="p-6 flex items-center justify-between border-b border-white/40">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-emerald-600/90 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-md border border-emerald-500/30">
+                    <i data-lucide="mountain" class="text-white w-5 h-5"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold tracking-tight font-mono-custom text-emerald-700">ANTRUM</span>
+                    <p class="text-xs text-stone-500 leading-none mt-1">Cave Carbon OS</p>
+                </div>
             </div>
-            <div>
-                <span class="text-xl font-bold tracking-tight font-mono-custom text-emerald-700">ANTRUM</span>
-                <p class="text-xs text-stone-500 leading-none mt-1">Cave Carbon OS</p>
-            </div>
+            <!-- Mobilde Menü Kapatma Butonu -->
+            <button onclick="toggleSidebar()" class="md:hidden text-stone-500 hover:text-stone-800 transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
         </div>
         <nav class="flex-1 mt-4 space-y-2 px-3 overflow-y-auto">
             <a class="sidebar-link flex items-center px-4 py-3 rounded-xl sidebar-active text-sm font-bold"
@@ -360,33 +329,29 @@
 
     <!-- ============ ANA İÇERİK ============ -->
     <main class="flex-1 flex flex-col overflow-y-auto">
-        <header class="glass-header py-3 flex items-center justify-between px-8 sticky top-0 z-50 min-h-[64px]">
-            <div class="flex items-center space-x-6">
+        <header class="glass-header py-3 flex items-center justify-between px-4 md:px-8 sticky top-0 z-50 min-h-[64px]">
+            <div class="flex items-center space-x-3 md:space-x-6">
+                <!-- Hamburger Button -->
+                <button onclick="toggleSidebar()" class="md:hidden flex items-center justify-center p-2 bg-white/80 hover:bg-white text-stone-600 rounded-xl transition-colors shadow-sm border border-white/80">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
                 <h1 class="text-base font-bold text-stone-800 hidden md:block tracking-wide" id="page-title">Operasyonel
                     Genel Bakış</h1>
                 <div class="flex flex-col">
                     <div class="flex items-center space-x-2 text-sm text-stone-600">
-                        <span
-                            class="hidden lg:flex items-center bg-white/60 backdrop-blur-sm border border-white/80 px-3 py-1 rounded-full shadow-sm text-stone-700 font-bold">
+                        <span class="hidden lg:flex items-center bg-white/60 backdrop-blur-sm border border-white/80 px-3 py-1 rounded-full shadow-sm text-stone-700 font-bold">
                             <i data-lucide="leaf" class="w-3 h-3 mr-1 text-emerald-600"></i>
                             1 Ton = 1 Kredi
                         </span>
-                        <span
-                            class="hidden lg:flex items-center bg-white/60 backdrop-blur-sm border border-white/80 px-3 py-1 rounded-full shadow-sm">
+                        <span class="hidden lg:flex items-center bg-white/60 backdrop-blur-sm border border-white/80 px-3 py-1 rounded-full shadow-sm">
                             <i data-lucide="check-circle" class="w-3 h-3 mr-1 text-emerald-500"></i>
-                            Verra: <span class="ml-1 font-bold text-stone-800">$10/Ton <span
-                                    class="text-[10px] text-stone-500 font-normal ml-0.5">(≈ <span
-                                        id="header-verra-tl">--</span> ₺)</span></span>
+                            Verra: <span class="ml-1 font-bold text-stone-800">$10/Ton <span class="text-[10px] text-stone-500 font-normal ml-0.5">(≈ <span id="header-verra-tl">--</span> ₺)</span></span>
                         </span>
-                        <span
-                            class="hidden lg:flex items-center bg-white/60 backdrop-blur-sm border border-white/80 px-3 py-1 rounded-full shadow-sm">
+                        <span class="hidden lg:flex items-center bg-white/60 backdrop-blur-sm border border-white/80 px-3 py-1 rounded-full shadow-sm">
                             <i data-lucide="award" class="w-3 h-3 mr-1 text-amber-500"></i>
-                            Gold Std: <span class="ml-1 font-bold text-stone-800">$30/Ton <span
-                                    class="text-[10px] text-stone-500 font-normal ml-0.5">(≈ <span
-                                        id="header-gold-tl">--</span> ₺)</span></span>
+                            Gold Std: <span class="ml-1 font-bold text-stone-800">$30/Ton <span class="text-[10px] text-stone-500 font-normal ml-0.5">(≈ <span id="header-gold-tl">--</span> ₺)</span></span>
                         </span>
-                        <span
-                            class="flex items-center bg-white/60 backdrop-blur-sm border border-white/80 px-3 py-1 rounded-full shadow-sm">
+                        <span class="flex items-center bg-white/60 backdrop-blur-sm border border-white/80 px-3 py-1 rounded-full shadow-sm">
                             <i data-lucide="trending-up" class="w-3 h-3 mr-1 text-emerald-600"></i>
                             USD: <span id="usd-rate" class="ml-1 font-bold text-stone-800 animate-pulse">...</span>
                         </span>
@@ -408,10 +373,10 @@
                     <p class="text-sm font-bold text-stone-800 font-mono-custom tracking-wider" id="last-update">
                         --:--:--</p>
                 </div>
-                <div class="w-10 h-10 rounded-full bg-emerald-100/80 border border-emerald-200/50 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-emerald-200/80 hover:ring-2 hover:ring-emerald-400/50 hover:ring-offset-2 hover:ring-offset-white transition-all outline-none"
+                <div class="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-emerald-200 shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-400/50 transition-all outline-none overflow-hidden flex-shrink-0"
                     onclick="openProfile()">
                     <!-- Ayşe Teyze'nin İnisiyali -->
-                    <span class="text-emerald-700 font-black text-sm">A</span>
+                    <img src="images/ayse-teyze-1.png" alt="Profil" class="w-full h-full object-cover" >
                 </div>
             </div>
         </header>
@@ -1039,6 +1004,9 @@
                         <button
                             class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-stone-600 hover:bg-white transition"
                             data-period="180" onclick="setReportPeriod(180)">6 Ay</button>
+                        <button
+                            class="tab-btn px-4 py-2 rounded-lg text-sm font-bold text-stone-600 hover:bg-white transition"
+                            data-period="365" onclick="setReportPeriod(365)">1 Yıl</button>
                     </div>
                 </div>
             </div>
@@ -1146,7 +1114,7 @@
                         <option value="Ihlara / Aksaray">Ihlara / Aksaray</option>
                     </select>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-stone-700 block mb-1">Hacim (m³)</label>
                         <input type="number" id="add-cave-volume" placeholder="1000"
@@ -1161,7 +1129,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-stone-700 block mb-1">Ürün Tipi</label>
                         <select id="add-cave-product"
@@ -1179,7 +1147,7 @@
                             class="w-full p-3 rounded-2xl bg-white/60 border border-white/80 text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-stone-700 block mb-1">Ürün Miktarı (Ton)</label>
                         <input type="number" id="add-cave-tons" placeholder="Örn: 1000"
@@ -1232,7 +1200,7 @@
                         <option value="Ihlara / Aksaray">Ihlara / Aksaray</option>
                     </select>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-stone-700 block mb-1">Hacim (m³)</label>
                         <input type="number" id="edit-cave-volume"
@@ -1247,7 +1215,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-stone-700 block mb-1">Ürün Tipi</label>
                         <select id="edit-cave-product"
@@ -1265,7 +1233,7 @@
                             class="w-full p-3 rounded-2xl bg-white/60 border border-white/80 text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-stone-700 block mb-1">Ürün Miktarı (Ton)</label>
                         <input type="number" id="edit-cave-tons" placeholder="Örn: 1000"
@@ -1277,7 +1245,7 @@
                             class="w-full p-3 rounded-2xl bg-white/60 border border-white/80 text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-stone-700 block mb-1">Sahibi</label>
                         <input type="text" id="edit-cave-owner"
@@ -1296,17 +1264,19 @@
 
                 <div class="flex space-x-3 mt-4">
                     <button type="button" onclick="deleteCave()"
-                        class="w-1/3 bg-red-100 hover:bg-red-200 text-red-700 font-bold py-3 rounded-2xl shadow-sm transition flex items-center justify-center">
+                        class="w-full sm:w-1/3 bg-red-100 hover:bg-red-200 text-red-700 font-bold py-3 rounded-2xl shadow-sm transition flex items-center justify-center">
                         <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> Sil
                     </button>
                     <button type="button" onclick="saveCaveEdit()"
-                        class="w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl shadow-md transition flex items-center justify-center">
+                        class="w-full sm:w-2/3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl shadow-md transition flex items-center justify-center">
                         <i data-lucide="save" class="w-4 h-4 mr-2"></i> Kaydet
                     </button>
                 </div>
             </form>
         </div>
     </div>
+    
+    <!-- ============ PROFİL MODALI ============ -->
     <div id="profile-modal" class="modal-backdrop" onclick="if(event.target===this) closeModal('profile-modal')">
         <div class="modal-content p-6 fade-in shadow-2xl" style="max-width:480px">
             <div class="flex items-center justify-between mb-4">
@@ -1317,8 +1287,9 @@
             </div>
             <div class="flex items-center space-x-4 mb-6">
                 <div
-                    class="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white text-xl font-black shadow-inner">
-                    A</div>
+                    class="w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-emerald-500 shadow-md flex-shrink-0 overflow-hidden">
+                    <img src="images/ayse-teyze-1.png" alt="Ayşe Teyze" class="w-full h-full object-cover">
+                </div>
                 <div>
                     <p class="text-base font-black text-stone-800">Ayşe Teyze</p>
                     <p class="text-sm text-stone-500 font-medium">ayseteyze@gmail.com</p>
@@ -1338,25 +1309,130 @@
                 </div>
             </div>
             <div class="space-y-2 text-sm font-bold">
-                <div
+                <div onclick="closeModal('profile-modal'); document.getElementById('settings-modal').classList.add('show'); refreshIcons();"
                     class="flex items-center text-stone-600 hover:bg-white/80 p-3 rounded-xl cursor-pointer transition border border-transparent hover:border-white">
                     <i data-lucide="settings" class="w-4 h-4 mr-3 text-stone-400"></i> Hesap Ayarları
                 </div>
-                <div
+                <div onclick="closeModal('profile-modal'); document.getElementById('api-modal').classList.add('show'); refreshIcons();"
                     class="flex items-center text-stone-600 hover:bg-white/80 p-3 rounded-xl cursor-pointer transition border border-transparent hover:border-white">
                     <i data-lucide="key" class="w-4 h-4 mr-3 text-stone-400"></i> API Anahtarları
                 </div>
-                <div
+                <div onclick="closeModal('profile-modal'); document.getElementById('notifications-modal').classList.add('show'); refreshIcons();"
                     class="flex items-center text-stone-600 hover:bg-white/80 p-3 rounded-xl cursor-pointer transition border border-transparent hover:border-white">
                     <i data-lucide="bell" class="w-4 h-4 mr-3 text-stone-400"></i> Bildirimler
                 </div>
-                <div
+                <div onclick="closeModal('profile-modal')"
                     class="flex items-center text-red-600 hover:bg-red-50 p-3 rounded-xl cursor-pointer transition border border-transparent hover:border-red-100 mt-2">
                     <i data-lucide="log-out" class="w-4 h-4 mr-3"></i> Çıkış Yap
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- ============ ALT MODALLAR (AYARLAR, API, BİLDİRİMLER) ============ -->
+    
+    <!-- Hesap Ayarları Modalı -->
+    <div id="settings-modal" class="modal-backdrop" onclick="if(event.target===this) closeModal('settings-modal')">
+        <div class="modal-content p-6 fade-in shadow-2xl" style="max-width:480px">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-black text-stone-800 flex items-center"><i data-lucide="settings" class="w-5 h-5 mr-2 text-emerald-600"></i> Hesap Ayarları</h3>
+                <button onclick="closeModal('settings-modal')" class="text-stone-400 hover:text-stone-700 bg-white/50 p-2 rounded-xl transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-stone-500 uppercase tracking-wide block mb-1">Ad Soyad</label>
+                    <input type="text" value="Ayşe Teyze" class="w-full p-3 rounded-2xl bg-white/60 border border-white/80 text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-stone-500 uppercase tracking-wide block mb-1">E-Posta</label>
+                    <input type="email" value="ayseteyze@gmail.com" class="w-full p-3 rounded-2xl bg-white/60 border border-white/80 text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-stone-500 uppercase tracking-wide block mb-1">Firma / Kurum</label>
+                    <input type="text" value="Kapadokya Doğal Depolama Koop." class="w-full p-3 rounded-2xl bg-white/60 border border-white/80 text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
+                </div>
+                <button onclick="saveSettingsBtn(this, 'settings-modal')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl transition shadow-md mt-2 flex items-center justify-center">
+                    <i data-lucide="save" class="w-4 h-4 mr-2"></i> Değişiklikleri Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Anahtarları Modalı -->
+    <div id="api-modal" class="modal-backdrop" onclick="if(event.target===this) closeModal('api-modal')">
+        <div class="modal-content p-6 fade-in shadow-2xl" style="max-width:500px">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-black text-stone-800 flex items-center"><i data-lucide="key" class="w-5 h-5 mr-2 text-emerald-600"></i> API Anahtarları</h3>
+                <button onclick="closeModal('api-modal')" class="text-stone-400 hover:text-stone-700 bg-white/50 p-2 rounded-xl transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div class="p-4 bg-white/70 rounded-2xl border border-white/80 shadow-sm">
+                    <label class="text-xs font-bold text-stone-500 uppercase tracking-wide block mb-1">Verra VCS API Key</label>
+                    <div class="flex space-x-2">
+                        <input type="password" id="api-key-1" value="vr_live_8f9d2a1b4c" class="flex-1 p-2.5 rounded-xl bg-white/60 border border-white/80 text-sm shadow-sm outline-none font-mono-custom">
+                        <button onclick="togglePassword('api-key-1')" class="p-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl transition"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+                <div class="p-4 bg-white/70 rounded-2xl border border-white/80 shadow-sm">
+                    <label class="text-xs font-bold text-stone-500 uppercase tracking-wide block mb-1">Open-Meteo Pro Key (Opsiyonel)</label>
+                    <input type="text" placeholder="Ücretsiz sürüm kullanımda..." class="w-full p-2.5 rounded-xl bg-white/60 border border-white/80 text-sm shadow-sm outline-none font-mono-custom mt-1">
+                </div>
+                <div class="p-4 bg-white/70 rounded-2xl border border-white/80 shadow-sm">
+                    <label class="text-xs font-bold text-stone-500 uppercase tracking-wide block mb-1">OSRM Routing Secret</label>
+                    <div class="flex space-x-2">
+                        <input type="password" id="api-key-2" value="osrm_sec_99482" class="flex-1 p-2.5 rounded-xl bg-white/60 border border-white/80 text-sm shadow-sm outline-none font-mono-custom">
+                        <button onclick="togglePassword('api-key-2')" class="p-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl transition"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+                <button onclick="saveSettingsBtn(this, 'api-modal')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl transition shadow-md mt-2 flex items-center justify-center">
+                    <i data-lucide="save" class="w-4 h-4 mr-2"></i> Anahtarları Güncelle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bildirim Tercihleri Modalı -->
+    <div id="notifications-modal" class="modal-backdrop" onclick="if(event.target===this) closeModal('notifications-modal')">
+        <div class="modal-content p-6 fade-in shadow-2xl" style="max-width:480px">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-black text-stone-800 flex items-center"><i data-lucide="bell" class="w-5 h-5 mr-2 text-emerald-600"></i> Bildirim Tercihleri</h3>
+                <button onclick="closeModal('notifications-modal')" class="text-stone-400 hover:text-stone-700 bg-white/50 p-2 rounded-xl transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-4 bg-white/70 rounded-2xl border border-white/80 shadow-sm cursor-pointer hover:bg-white transition" onclick="toggleSwitch(this.querySelector('.toggle-bg'))">
+                    <div>
+                        <p class="text-sm font-bold text-stone-800">Sistem Uyarıları (IoT)</p>
+                        <p class="text-xs text-stone-500 font-medium mt-0.5">Sıcaklık ve nem anormallikleri</p>
+                    </div>
+                    <div class="toggle-bg w-10 h-6 bg-emerald-500 rounded-full relative shadow-inner transition-colors duration-300" data-state="on">
+                        <div class="switch-circle w-4 h-4 bg-white rounded-full absolute top-1 right-1 shadow-sm transition-all duration-300"></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-white/70 rounded-2xl border border-white/80 shadow-sm cursor-pointer hover:bg-white transition" onclick="toggleSwitch(this.querySelector('.toggle-bg'))">
+                    <div>
+                        <p class="text-sm font-bold text-stone-800">Karbon Kredisi Satışları</p>
+                        <p class="text-xs text-stone-500 font-medium mt-0.5">Marketplace işlem bildirimleri</p>
+                    </div>
+                    <div class="toggle-bg w-10 h-6 bg-emerald-500 rounded-full relative shadow-inner transition-colors duration-300" data-state="on">
+                        <div class="switch-circle w-4 h-4 bg-white rounded-full absolute top-1 right-1 shadow-sm transition-all duration-300"></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-white/70 rounded-2xl border border-white/80 shadow-sm cursor-pointer hover:bg-white transition" onclick="toggleSwitch(this.querySelector('.toggle-bg'))">
+                    <div>
+                        <p class="text-sm font-bold text-stone-800">Haftalık Raporlar (E-Posta)</p>
+                        <p class="text-xs text-stone-500 font-medium mt-0.5">Karbon tasarruf özetleri</p>
+                    </div>
+                    <div class="toggle-bg w-10 h-6 bg-stone-300 rounded-full relative shadow-inner transition-colors duration-300" data-state="off">
+                        <div class="switch-circle w-4 h-4 bg-white rounded-full absolute top-1 left-1 shadow-sm transition-all duration-300"></div>
+                    </div>
+                </div>
+                <button onclick="saveSettingsBtn(this, 'notifications-modal')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl transition shadow-md mt-4 flex items-center justify-center">
+                    <i data-lucide="save" class="w-4 h-4 mr-2"></i> Tercihleri Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="contract-modal" class="modal-backdrop" onclick="if(event.target===this) closeModal('contract-modal')">
         <div class="modal-content p-6 fade-in shadow-2xl" style="max-width:520px">
             <div class="text-center">
@@ -1378,7 +1454,94 @@
             </div>
         </div>
     </div>
+    <!-- ============ DETAYLI RAPOR MODALI ============ -->
+    <div id="detailed-report-modal" class="modal-backdrop" onclick="if(event.target===this) closeModal('detailed-report-modal')">
+        <div class="modal-content p-0 fade-in border-0 shadow-2xl" style="max-width:700px">
+            <div class="bg-white rounded-2xl overflow-hidden text-stone-800">
+                <!-- Rapor Başlığı -->
+                <div class="p-6 border-b border-stone-100 flex justify-between items-center bg-stone-50">
+                    <div>
+                        <h3 class="text-xl font-black flex items-center">
+                            <i data-lucide="file-text" class="mr-2 text-emerald-600"></i> Teknik Analiz Rapor
+                        </h3>
+                        <p class="text-xs text-stone-500 font-bold uppercase tracking-widest mt-1">Antrum Cloud OS • Sertifikalı Çıktı</p>
+                    </div>
+                    <button onclick="closeModal('detailed-report-modal')" class="p-2 hover:bg-stone-200 rounded-xl transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <!-- Rapor İçeriği -->
+                <div class="p-8 space-y-8" id="report-modal-body">
+                    <!-- Burası JS ile dolacak -->
+                </div>
+
+                <!-- Alt Bilgi / Yazdır -->
+                <div class="p-6 bg-stone-50 border-t border-stone-100 flex justify-between items-center">
+                    <p class="text-[10px] text-stone-400 font-mono-custom">Doğrulama Kodu: ANT-<span id="report-verify-code"></span></p>
+                    <button onclick="window.print()" class="bg-stone-800 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center hover:bg-black transition">
+                        <i data-lucide="printer" class="w-4 h-4 mr-2"></i> Raporu Yazdır (PDF)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ================================================================
+        // MODAL İÇİ FONKSİYONLAR (TOGGLE & PASSWORD & SAVE)
+        // ================================================================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+                setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('opacity-0');
+                setTimeout(() => backdrop.classList.add('hidden'), 300);
+            }
+        }
+
+        function toggleSwitch(element) {
+            const state = element.getAttribute('data-state');
+            const circle = element.querySelector('.switch-circle');
+            if(state === 'on') {
+                element.setAttribute('data-state', 'off');
+                element.classList.replace('bg-emerald-500', 'bg-stone-300');
+                circle.classList.replace('right-1', 'left-1');
+            } else {
+                element.setAttribute('data-state', 'on');
+                element.classList.replace('bg-stone-300', 'bg-emerald-500');
+                circle.classList.replace('left-1', 'right-1');
+            }
+        }
+
+        function togglePassword(id) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+            } else {
+                input.type = "password";
+            }
+        }
+
+        function saveSettingsBtn(btn, modalId) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4 mr-2"></i> Başarıyla Kaydedildi!';
+            refreshIcons();
+            btn.classList.add('bg-emerald-800');
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('bg-emerald-800');
+                closeModal(modalId);
+                refreshIcons();
+            }, 1200);
+        }
+
         // ================================================================
         // SABİTLER VE STATE
         // ================================================================
@@ -1463,6 +1626,13 @@
             setTimeout(() => {
                 Object.values(State.maps).forEach(m => m && m.invalidateSize());
             }, 100);
+
+            if (window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+                    toggleSidebar();
+                }
+            }
 
             if (view === 'caves') renderCaves();
             if (view === 'logistics') initLogisticsMap();
@@ -2028,7 +2198,7 @@
             </div>
         </div>
         <div class="md:col-span-2 flex space-x-3 mt-2">
-            <button class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl flex items-center justify-center transition shadow-md"><i data-lucide="file-text" class="w-4 h-4 mr-2"></i> Detaylı Rapor</button>
+            <button onclick="generateDetailedReport()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-2xl flex items-center justify-center transition shadow-md"><i data-lucide="file-text" class="w-4 h-4 mr-2"></i> Detaylı Rapor</button>
             <button class="flex-1 bg-white/80 border border-white hover:bg-white text-stone-700 font-bold py-3 rounded-2xl flex items-center justify-center transition shadow-sm"><i data-lucide="message-circle" class="w-4 h-4 mr-2"></i> Sahip ile İletişim</button>
         </div>
     </div>`;
@@ -2043,6 +2213,79 @@
             document.getElementById('profile-modal').classList.add('show');
             refreshIcons();
         }
+        
+        // ================================================================
+        // DETAYLI RAPOR OLUŞTURUCU
+        // ================================================================
+        function generateDetailedReport() {
+            const cave = CAVES.find(c => c.id === State.selectedCaveId);
+            if (!cave) return;
+
+            const annualTons = (cave.monthlyTons * 12).toFixed(1);
+            const totalRevenue = ((cave.monthlyTons * 10 * State.liveUsdRate) + ((cave.productTons || 1000) * 12.5)) * 12;
+            const body = document.getElementById('report-modal-body');
+
+            document.getElementById('report-verify-code').innerText = Math.random().toString(36).substr(2, 9).toUpperCase();
+
+            body.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="text-3xl font-black text-emerald-700">${cave.name}</h4>
+                        <p class="text-stone-500 font-bold mt-1">${cave.location} • Aktif Operasyon</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-stone-400 font-bold uppercase">Düzenleme Tarihi</p>
+                        <p class="text-sm font-black">${new Date().toLocaleDateString('tr-TR')}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <h5 class="text-xs font-black text-stone-400 uppercase tracking-widest border-b pb-2">Teknik Parametreler</h5>
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex justify-between"><span>Hacim Kapasitesi:</span> <strong>${cave.volume.toLocaleString('tr-TR')} m³</strong></li>
+                            <li class="flex justify-between"><span>Depolanan Ürün:</span> <strong>${cave.productEmoji} ${cave.productType.toUpperCase()}</strong></li>
+                            <li class="flex justify-between"><span>Yıllık Karbon Kredisi:</span> <strong class="text-emerald-600">${annualTons} Ton CO₂e</strong></li>
+                            <li class="flex justify-between"><span>Sertifika Tipi:</span> <strong>${cave.cert}</strong></li>
+                        </ul>
+                    </div>
+                    <div class="space-y-4">
+                        <h5 class="text-xs font-black text-stone-400 uppercase tracking-widest border-b pb-2">Ekonomik Öngörü (12 Ay)</h5>
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex justify-between"><span>Kira Geliri:</span> <strong>₺${((cave.productTons || 1000) * 12.5 * 12).toLocaleString('tr-TR')}</strong></li>
+                            <li class="flex justify-between"><span>Karbon Geliri:</span> <strong>₺${(cave.monthlyTons * 10 * State.liveUsdRate * 12).toLocaleString('tr-TR', {maximumFractionDigits:0})}</strong></li>
+                            <li class="flex justify-between border-t pt-2 font-black text-lg text-emerald-700">
+                                <span>Net Toplam:</span> <span>₺${totalRevenue.toLocaleString('tr-TR', {maximumFractionDigits:0})}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="p-6 bg-emerald-50 rounded-2xl border border-emerald-100 italic text-sm text-emerald-800 leading-relaxed">
+                    "Bu rapor, <strong>ISO 14064-2</strong> standartlarına uygun olarak, mağara içi mikro-klima verileri ile ${REFERENCE_STORAGE.cold.name} enerji tüketim endekslerinin karşılaştırılması sonucu oluşturulmuştur. 
+                    Yıllık bazda hedeflenen <strong>${annualTons} ton</strong> karbon tasarrufu, yaklaşık <strong>${(annualTons * 5).toFixed(0)}</strong> yetişkin ağacın yıllık karbon emilimine eşdeğerdir."
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="p-4 border border-stone-200 rounded-xl text-center">
+                        <p class="text-[10px] font-bold text-stone-400 uppercase">Enerji Verimliliği</p>
+                        <p class="text-xl font-black text-stone-800">%89.4</p>
+                    </div>
+                    <div class="p-4 border border-stone-200 rounded-xl text-center">
+                        <p class="text-[10px] font-bold text-stone-400 uppercase">IoT Güven Skoru</p>
+                        <p class="text-xl font-black text-stone-800">9.8/10</p>
+                    </div>
+                    <div class="p-4 border border-stone-200 rounded-xl text-center">
+                        <p class="text-[10px] font-bold text-stone-400 uppercase">CORSIA Uyumu</p>
+                        <p class="text-xl font-black text-stone-800">Tam</p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('detailed-report-modal').classList.add('show');
+            refreshIcons();
+        }
+
         // ================================================================
         // DASHBOARD HARİTASI (NEREDEN - NEREYE DİNAMİK ROTA)
         // ================================================================
@@ -2234,10 +2477,10 @@
             { id: 'CR-2026-006', cave: 'ANT-008', tons: 13.2, cert: 'Gold Standard', status: 'listed', buyer: '-', hash: '0x1f4e...9c5a' }
         ];
         const BUYERS = [
-            { name: 'Turkish Airlines', logo: '✈️', volume: 67.2, status: 'active' },
-            { name: 'Lufthansa Group', logo: '🛫', volume: 25.2, status: 'active' },
-            { name: 'Pegasus Hava', logo: '🛩️', volume: 42.0, status: 'active' },
-            { name: 'Microsoft (ESG)', logo: '💻', volume: 16.8, status: 'completed' }
+            { name: 'Turkish Airlines', logoUrl: 'images/turkish-airlines-logo.png', volume: 67.2, status: 'active' },
+            { name: 'Lufthansa Group', logoUrl: 'images/lufthansa-logo.png', volume: 25.2, status: 'active' },
+            { name: 'Pegasus Hava', logoUrl: 'images/pegasus-logo.png', volume: 42.0, status: 'active' },
+            { name: 'Microsoft (ESG)', logoUrl: 'images/microsoft-logo.png', volume: 16.8, status: 'completed' }
         ];
         const TRANSACTIONS = [
             { time: '2 saat önce', type: 'sold', desc: 'Turkish Airlines, ANT-001\'den 21.6 ton kredi satın aldı', amountUSD: 216, hash: '0x4a7f...8c2e' },
@@ -2265,17 +2508,20 @@
             }).join('');
 
             document.getElementById('buyers-list').innerHTML = BUYERS.map(b => `
-        <div class="flex items-center justify-between p-4 bg-white/70 rounded-2xl border border-white/80 shadow-sm transition hover:bg-white">
-            <div class="flex items-center space-x-3">
-                <span class="text-2xl filter drop-shadow-sm">${b.logo}</span>
-                <div>
-                    <p class="text-sm font-black text-stone-800">${b.name}</p>
-                    <p class="text-xs text-stone-500 font-medium">${b.volume} ton ${b.status === 'active' ? 'aktif talep' : 'tamamlandı'}</p>
-                </div>
+    <div class="flex items-center justify-between p-3 md:p-4 bg-white/70 rounded-2xl border border-white/80 shadow-sm transition hover:bg-white">
+        <div class="flex items-center space-x-3 min-w-0">
+            <!-- YENİ: Emoji yerine gerçek görseli (img) çağıran yapı -->
+            <div class="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center border border-stone-200 shadow-sm flex-shrink-0 overflow-hidden">
+                <img src="${b.logoUrl}" alt="${b.name} Logo" class="w-full h-full object-contain p-1.5" onerror="this.src='https://ui-avatars.com/api/?name=${b.name.replace(' ', '+')}&background=random';">
             </div>
-            <span class="w-3 h-3 ${b.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-stone-300'} rounded-full shadow-inner"></span>
+            <div class="min-w-0">
+                <p class="text-xs md:text-sm font-black text-stone-800 truncate">${b.name}</p>
+                <p class="text-[11px] md:text-xs text-stone-500 font-medium">${b.volume} ton ${b.status === 'active' ? 'aktif' : 'tamam'}</p>
+            </div>
         </div>
-    `).join('');
+        <span class="w-3 h-3 ${b.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-stone-300'} rounded-full shadow-inner flex-shrink-0"></span>
+    </div>
+`).join('');
 
             document.getElementById('transactions-list').innerHTML = TRANSACTIONS.map(t => {
                 const iconColor = { sold: 'text-purple-600 bg-purple-100', issued: 'text-emerald-600 bg-emerald-100', retired: 'text-stone-600 bg-stone-200', listed: 'text-blue-600 bg-blue-100' }[t.type];
