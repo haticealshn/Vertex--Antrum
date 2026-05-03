@@ -15,7 +15,7 @@
 Kapadokya'daki doğal tüf depolar, yapay soğuk hava depolarının kompresörlerle yaptığı iklimlendirme işini **%0 enerji** harcayarak yapar. ANTRUM, bu devasa enerji tasarrufunu (kWh/m³) ISO 14064 standartlarına göre hesaplar, karbon kredisine dönüştürür ve küresel piyasalarda satar. 
 
 ## 💰 2. Tam Entegre 3 Eksenli Gelir Modeli
-Sistem, depo sahipleri (örn: Yöre halkından Ayşe Teyze) için sadece bir iklimlendirme platformu değil, bir "Finansal İşletim Sistemi"dir. Depo sahibi alanını sisteme kaydettiğinde tek bir ekrandan üç farklı kazanç elde eder:
+Sistem, depo sahipleri için sadece bir iklimlendirme platformu değil, kapsamlı bir "Finansal İşletim Sistemi"dir. Depo sahibi alanını sisteme kaydettiğinde tek bir ekrandan üç farklı kazanç elde eder:
 1. **Fiziksel Kira Geliri:** Depolanan ürünün tonajı ve süresi (ay) üzerinden alınan standart depo kirası.
 2. **Karbon Kredisi Getirisi:** Önlenen elektrik tüketimi ve sıfırlanan soğutucu gaz kaçaklarından elde edilen kredinin (Verra/Gold Standard) global havayollarına (CORSIA) satışı.
 3. **Lojistik Komisyonu:** Platformun akıllı rota algoritmasıyla çekilen nakliye operasyonlarından alınan pay.
@@ -24,7 +24,7 @@ Sistem, depo sahipleri (örn: Yöre halkından Ayşe Teyze) için sadece bir ikl
 Komite tarafından belirlenen 3 teknik zorunlu kural, birbirini besleyen bir hesap zincirinde **"Bonus Puan"** kurgusuyla birleştirilmiştir:
 
 1. **Kural 3 (Coğrafi Veri & Dinamik Rota):** Sabit (hardcoded) lokasyon verisi kullanılmamıştır. Kullanıcı çıkış şehrini ve hedef depoyu seçtiğinde, **Leaflet.js** ve **OSRM (OpenRouteService)** ile mesafe dinamik çizilir. Haritada tıklanan konumların adresleri **Nominatim API (Reverse Geocoding)** ile anlık tespit edilir.
-2. **Kural 1 (Coğrafi Karbon İzi):** OSRM'den çekilen rota (km) ve yük tonajı ile nakliye emisyonu hesaplanır. Bu lojistik günahı, deponun sağladığı karbon tasarrufundan düşülerek gerçek ve dürüst **"Net Karbon Kazancı"** elde edilir.
+2. **Kural 1 (Coğrafi Karbon İzi):** OSRM'den çekilen rota (km) ve yük tonajı ile lojistik nakliye emisyonu hesaplanır. Bu lojistik emisyon yükü, deponun sağladığı brüt karbon tasarrufundan düşülerek şeffaf ve kanıtlanabilir **"Net Karbon Kazancı"** elde edilir.
 3. **Kural 2 (Canlı Döviz Kuru):** Kazanılan global karbon kredileri, **TCMB XML Servisi** (Fallback: ExchangeRate-API) üzerinden çekilen anlık USD/TRY kurlarıyla çarpılarak, kullanıcılara çift para birimli (₺ ve $) raporlanır.
 
 ## 🧮 4. Bilimsel Altyapı ve Karbon Motoru
@@ -37,6 +37,7 @@ Hesaplamalarımız endüstriyel gerçekliğe dayanır:
 * **Open-Meteo Live API:** Nevşehir'in anlık dış sıcaklık ve nem verisiyle karbon simülasyonunu anlık günceller.
 * **Open-Meteo Archive API:** Raporlar sekmesinde son 1, 3 veya 6 aylık *gerçek* hava koşulları çekilerek, deponun geçmiş tasarruf raporu (Chart.js ile) dinamik oluşturulur.
 * **OSRM & Nominatim:** Canlı lojistik ve adres sorgulama.
+* **TCMB / ExchangeRate-API:** Canlı kur çevirileri.
 
 ## 🏗️ 6. Sistem Mimarisi (Architectural Diagram)
 
