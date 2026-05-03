@@ -5,8 +5,8 @@
 ---
 
 ## 📌 Proje Bağlantıları
-* 🎥 **Demo Videosu (Loom/YouTube):** [Video Linki Buraya] *(Max 3 dk)*
-* 🌐 **Canlı Demo (Vercel):** [Canlı Yayın Linki Buraya]
+* 🎥 **Demo Videosu (Loom/YouTube):** [(https://youtu.be/DLSSLCoz8os)] *(Max 3 dk)*
+* 🌐 **Canlı Demo (Vercel):** [(https://vertex-antrum-8rvm.vercel.app/)]
 * 📂 **GitHub Repo:** [Repo Linki]
 
 ---
