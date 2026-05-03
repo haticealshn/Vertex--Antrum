@@ -6,46 +6,45 @@
 
 ## 📌 Proje Bağlantıları
 * 🎥 **Demo Videosu (Loom/YouTube):** [Video Linki Buraya] *(Max 3 dk)*
-* 🌐 **Canlı Demo (Vercel/Render):** [Canlı Yayın Linki Buraya]
+* 🌐 **Canlı Demo (Vercel):** [Canlı Yayın Linki Buraya]
 * 📂 **GitHub Repo:** [Repo Linki]
 
 ---
 
 ## 💡 1. Projenin Özü: "Rakiplerin Hiç Düşünmediği Modül"
-Kapadokya'daki doğal mağaralar (tüf kayalar), yapay soğuk hava depolarının yaptığı iklimlendirme işini **%0 enerji** harcayarak yapar. ANTRUM, bu devasa enerji tasarrufunu (kWh/m³) ölçer, ISO 14064 standartlarına göre belgelendirir, karbon kredisine dönüştürür ve küresel şirketlere satar. Bu sistemde mağara sahibi, alanının doğal soğutma kapasitesini kiralayarak 3 eksenli (Kira + Lojistik + Karbon Kredisi) bir gelir modeli elde eder.
+Kapadokya'daki doğal tüf depolar, yapay soğuk hava depolarının kompresörlerle yaptığı iklimlendirme işini **%0 enerji** harcayarak yapar. ANTRUM, bu devasa enerji tasarrufunu (kWh/m³) ISO 14064 standartlarına göre hesaplar, karbon kredisine dönüştürür ve küresel piyasalarda satar. 
 
-## 🛠️ 2. Sistem Yetenekleri (MVP Durumu)
-Uygulamamız tam fonksiyonel bir **Single Page Application (SPA)** olarak kurgulanmıştır:
-* **Tam Reaktif CRUD İşlemleri:** Sisteme yeni mağara eklenebilir, mevcut mağaralar düzenlenebilir veya silinebilir. Yapılan her değişiklik Dashboard KPI'larını (Toplam Hacim, Portföy Değeri, Toplam Karbon) anında günceller.
-* **İnteraktif Veri Görselleştirme:** Karbon hesaplayıcıdaki slider'lar (hacim ve sıcaklık) kullanıcı etkileşimine göre dinamik olarak renk ve boyut değiştirir.
-* **Glassmorphism UI:** Sürdürülebilirlik vizyonunu yansıtmak amacıyla "Aydınlık Doğa (Light Nature)" teması kullanılmıştır.
+## 💰 2. Tam Entegre 3 Eksenli Gelir Modeli
+Sistem, depo sahipleri (örn: Yöre halkından Ayşe Teyze) için sadece bir iklimlendirme platformu değil, bir "Finansal İşletim Sistemi"dir. Depo sahibi alanını sisteme kaydettiğinde tek bir ekrandan üç farklı kazanç elde eder:
+1. **Fiziksel Kira Geliri:** Depolanan ürünün tonajı ve süresi (ay) üzerinden alınan standart depo kirası.
+2. **Karbon Kredisi Getirisi:** Önlenen elektrik tüketimi ve sıfırlanan soğutucu gaz kaçaklarından elde edilen kredinin (Verra/Gold Standard) global havayollarına (CORSIA) satışı.
+3. **Lojistik Komisyonu:** Platformun akıllı rota algoritmasıyla çekilen nakliye operasyonlarından alınan pay.
 
 ## ⚙️ 3. Hackathon Zorunlu Kurallarının (Bonus) Entegrasyonu
-Hackathon komitesi tarafından belirlenen 3 teknik zorunlu kural, birbiriyle konuşan tek bir hesap zincirinde **"Bonus Puan"** kurgusuyla birleştirilmiştir:
+Komite tarafından belirlenen 3 teknik zorunlu kural, birbirini besleyen bir hesap zincirinde **"Bonus Puan"** kurgusuyla birleştirilmiştir:
 
-1. **Kural 3 (Coğrafi Veri & Dinamik Rota):** Lojistik ve Dashboard sekmelerinde sabit veri kullanılmamıştır. Kullanıcı bir çıkış şehri ve sistemdeki aktif mağaralardan birini hedef olarak seçtiğinde, mesafe **Leaflet.js** ve **OSRM (OpenRouteService)** ile dinamik hesaplanır. Haritada tıklanan konumların adresleri **Nominatim API (Reverse Geocoding)** ile anlık tespit edilir.
-2. **Kural 1 (Coğrafi Karbon İzi):** OSRM'den gelen rota mesafesi (km) ve yük tonajı baz alınarak nakliye emisyonu hesaplanır. Bu değer, mağaranın sağladığı brüt karbon tasarrufundan düşülerek **"Net Karbon Kazancı"** elde edilir.
-3. **Kural 2 (Canlı Döviz Kuru):** Elde edilen Net Karbon Kredisi, **TCMB XML Servisi** (Fallback: ExchangeRate-API) üzerinden anlık çekilen USD/TRY kuru ile çarpılarak mağara sahibine anlık TL karşılığı olarak sunulur.
+1. **Kural 3 (Coğrafi Veri & Dinamik Rota):** Sabit (hardcoded) lokasyon verisi kullanılmamıştır. Kullanıcı çıkış şehrini ve hedef depoyu seçtiğinde, **Leaflet.js** ve **OSRM (OpenRouteService)** ile mesafe dinamik çizilir. Haritada tıklanan konumların adresleri **Nominatim API (Reverse Geocoding)** ile anlık tespit edilir.
+2. **Kural 1 (Coğrafi Karbon İzi):** OSRM'den çekilen rota (km) ve yük tonajı ile nakliye emisyonu hesaplanır. Bu lojistik günahı, deponun sağladığı karbon tasarrufundan düşülerek gerçek ve dürüst **"Net Karbon Kazancı"** elde edilir.
+3. **Kural 2 (Canlı Döviz Kuru):** Kazanılan global karbon kredileri, **TCMB XML Servisi** (Fallback: ExchangeRate-API) üzerinden çekilen anlık USD/TRY kurlarıyla çarpılarak, kullanıcılara çift para birimli (₺ ve $) raporlanır.
 
-## 🧮 4. Bilimsel Altyapı ve Karbon Motoru (ISO 14064)
-Karbon motorumuz m² yerine, GCCA/IIR küresel soğuk zincir standartları olan **m³ (hacim)** bazlı çalışır. 
-* *Formül:* `[Referans Depo kWh - Mağara Operasyonel Yükü (5 kWh)] × Sıcaklık Katsayısı × Hacim × 0.522 (TEİAŞ Emisyon Faktörü)`
-* Şeffaflık ilkesi gereği mağaranın %0 enerji harcadığı iddia edilmez; aydınlatma, fan ve sensörler için **5 kWh/m³** operasyonel yük brüt tasarruftan düşülür.
+## 🧮 4. Bilimsel Altyapı ve Karbon Motoru
+Hesaplamalarımız endüstriyel gerçekliğe dayanır:
+* **Hacim Bazlı Standart:** Karbon motorumuz m² değil, GCCA küresel soğuk zincir standartları olan **m³** bazlı çalışır.
+* **Şeffaflık İlkesi:** Doğal depoların %0 enerji harcadığı iddia edilmez; içerideki aydınlatma ve havalandırma fanları için **5 kWh/m³** operasyonel yük brüt tasarruftan (Örn: 50 kWh/m³) düşülür.
+* **Sıcaklık Katsayısı:** `[Ref. Depo kWh - 5 kWh] × Sıc. Katsayısı × Hacim × 0.522 (TEİAŞ Faktörü)`
 
-## 🌐 5. API Ekosistemi ve Veri Akışı
-Sistem tamamen canlı verilerle beslenen bir organizmadır:
-* **Open-Meteo Live API:** Nevşehir'in anlık dış sıcaklık ve nem verisini çekerek karbon tasarruf simülasyonunu günceller.
-* **Open-Meteo Archive API:** Raporlar sekmesinde son 1, 3 veya 6 aylık geçmiş gerçek hava verilerini çekerek geçmiş karbon tasarruf istatistiklerini oluşturur (Chart.js ile çizdirilir) ve CSV olarak dışa aktarır.
-* **OSRM & Nominatim:** Dinamik rota çizimi, mesafe hesaplama ve harita üstü konum sorgulama.
-* **TCMB / ExchangeRate-API:** Canlı kur çevirileri.
+## 🌐 5. API Ekosistemi (Canlı Veri Akışı)
+* **Open-Meteo Live API:** Nevşehir'in anlık dış sıcaklık ve nem verisiyle karbon simülasyonunu anlık günceller.
+* **Open-Meteo Archive API:** Raporlar sekmesinde son 1, 3 veya 6 aylık *gerçek* hava koşulları çekilerek, deponun geçmiş tasarruf raporu (Chart.js ile) dinamik oluşturulur.
+* **OSRM & Nominatim:** Canlı lojistik ve adres sorgulama.
 
 ## 🏗️ 6. Sistem Mimarisi (Architectural Diagram)
 
 ```mermaid
 graph TD
-    A[Meteoroloji / Open-Meteo API] -->|Anlık / Geçmiş İklim| B(ISO 14064 Karbon Motoru)
-    C[Lojistik Mesafe / OSRM API] -->|Nakliye Emisyonu| B
-    B -->|Net Karbon Kredisi| D[Verra / Gold Standard]
-    D --> E(Canlı Döviz API)
-    E -->|Fiyatlandırma| F[Glassmorphism Dashboard]
-    F -->|In-Memory CRUD State| G[Mağara Ağları Veritabanı]
+    A[Open-Meteo API / İklim] -->|Sıcaklık & Nem| B(ISO 14064 Karbon Motoru)
+    C[OSRM API / Lojistik] -->|Nakliye Emisyonu| B
+    B -->|Net Kredi| D[Verra / Gold Standard]
+    D --> E(TCMB Canlı Kur API)
+    E -->|Kira + Karbon Geliri| F[ANTRUM Dashboard]
+    F -->|In-Memory State| G[(Depo & Kapasite Veritabanı)]
