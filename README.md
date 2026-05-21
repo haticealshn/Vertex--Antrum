@@ -5,10 +5,11 @@
 ---
 
 ## 📌 Proje Bağlantıları
-* 🎥 **Demo Videosu (Loom/YouTube):** [(https://youtu.be/DLSSLCoz8os)] 
-* Animasyon Videosu (Youtube): [(https://youtu.be/HDiMiwWtfOo)]
-* 🌐 **Canlı Demo (Vercel):** [(https://vertex-antrum-8rvm.vercel.app/)]
-* 📂 **GitHub Repo:** [(https://github.com/emirrhandemiir/Vertex-Antrum)]
+
+* 🎥 **Demo Videosu (Loom/YouTube):** [İzlemek için tıklayın](https://youtu.be/DLSSLCoz8os)
+* 🎬 **Animasyon Videosu (YouTube):** [İzlemek için tıklayın](https://youtu.be/HDiMiwWtfOo)
+* 🌐 **Canlı Demo (Vercel):** [Sistemi İnceleyin](https://vertex-antrum-8rvm.vercel.app/)
+* 📁 **GitHub Repo:** [haticealshn/Vertex--Antrum](https://github.com/haticealshn/Vertex--Antrum)
 
 ---
 
