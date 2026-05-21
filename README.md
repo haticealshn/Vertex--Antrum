@@ -9,7 +9,7 @@
 * 🎥 **Demo Videosu (Loom/YouTube):** [İzlemek için tıklayın](https://youtu.be/DLSSLCoz8os)
 * 🎬 **Animasyon Videosu (YouTube):** [İzlemek için tıklayın](https://youtu.be/HDiMiwWtfOo)
 * 🌐 **Canlı Demo (Vercel):** [Sistemi İnceleyin](https://vertex-antrum-8rvm.vercel.app/)
-* 📁 **GitHub Repo:** [haticealshn/Vertex--Antrum](https://github.com/haticealshn/Vertex--Antrum)
+* 📁 **GitHub Repo:** [haticealshn/Vertex--Antrum](https://github.com/haticealshn/Vertex--Antrum) Repo:** [(https://github.com/emirrhandemiir/Vertex-Antrum)]
 
 ---
 
@@ -36,7 +36,7 @@ Hesaplamalarımız endüstriyel gerçekliğe dayanır:
 * **PDF Sertifikasyon Raporu:** Sistem, ISO 14064-2 standartlarına uygun teknik parametreleri ve ekonomik öngörüleri içeren, yazdırılabilir anlık PDF "Teknik Analiz Raporları" üretir.
 
 ## 📱 5. Kusursuz Kullanıcı Deneyimi (Mobil İlk Yaklaşım)
-Sistemimiz; **"Aydınlık Doğa (Light Nature)"** teması ve **Glassmorphism** UI mimarisi ile tasarlanmıştır. Telefon ve tabletler için %100 uyumlu "Responsive Hamburger Menü", reaktif veri grafikleri ve gelişmiş kullanıcı panelleri (API Yönetimi, Bildirim Ayarları) içermektedir.
+Sistemimiz; **"Aydınlık Doğa (Light Nature)"** teması ve **Glassmorphism** UI mimarisi ile tasarlanmıştır. Telefon ve tabletler için %100 uyumlu "Responsive Hamburger Menü", reaktif veri grafikleri ogelişmiş kullanıcı panelleri (API Yönetimi, Bildirim Ayarları) içermektedir.
 
 ## 🌐 6. API Ekosistemi (Canlı Veri Akışı)
 * **Open-Meteo Live API:** Nevşehir'in anlık dış sıcaklık ve nem verisiyle karbon simülasyonunu anlık günceller.
