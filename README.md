@@ -5,11 +5,10 @@
 ---
 
 ## 📌 Proje Bağlantıları
-
 * 🎥 **Demo Videosu (Loom/YouTube):** [İzlemek için tıklayın](https://youtu.be/DLSSLCoz8os)
-* 🎬 **Animasyon Videosu (YouTube):** [İzlemek için tıklayın](https://youtu.be/HDiMiwWtfOo)
+* Animasyon Videosu (Youtube): [İzlemek için tıklayın](https://youtu.be/HDiMiwWtfOo)
 * 🌐 **Canlı Demo (Vercel):** [Sistemi İnceleyin](https://vertex-antrum-8rvm.vercel.app/)
-* 📁 **GitHub Repo:** [haticealshn/Vertex--Antrum](https://github.com/haticealshn/Vertex--Antrum) Repo:** [(https://github.com/emirrhandemiir/Vertex-Antrum)]
+* 📂 **GitHub Repo:** [haticealshn/Vertex--Antrum](https://github.com/haticealshn/Vertex--Antrum)
 
 ---
 
@@ -31,7 +30,7 @@ Komite tarafından belirlenen 3 teknik zorunlu kural, birbirini besleyen bir hes
 
 ## 🧮 4. Bilimsel Altyapı ve Sertifikalı Raporlama
 Hesaplamalarımız endüstriyel gerçekliğe dayanır:
-* **Hacim Bazlı Standart:** Karbon motorumuz m² değil, GCCA küresel soğuk zincir standartları olan **m³** bazlı çalışır.
+* **Hacim Bazlı Standart:** Karbon motorumuz m² değil, GCCA küresel soğuk zincir standartları olan **m³** bazen çalışır.
 * **Şeffaflık İlkesi:** Doğal depoların %0 enerji harcadığı iddia edilmez; aydınlatma ve fanlar için **5 kWh/m³** operasyonel yük brüt tasarruftan düşülür.
 * **PDF Sertifikasyon Raporu:** Sistem, ISO 14064-2 standartlarına uygun teknik parametreleri ve ekonomik öngörüleri içeren, yazdırılabilir anlık PDF "Teknik Analiz Raporları" üretir.
 
